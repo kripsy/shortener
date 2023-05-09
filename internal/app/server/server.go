@@ -6,17 +6,17 @@ import (
 )
 
 type MyServer struct {
-	Router    *chi.Mux
-	ServerUrl string
+	Router  *chi.Mux
+	UrlRepo string
 }
 
-func InitServer(serverUrl string, repo handlers.Repository) *MyServer {
+func InitServer(UrlRepo string, repo handlers.Repository) *MyServer {
 	m := MyServer{}
-	m.ServerUrl = serverUrl
+	m.UrlRepo = UrlRepo
 
 	m.Router = chi.NewRouter()
-	m.Router.Post("/", handlers.SaveUrlHandler(repo, m.ServerUrl))
-	m.Router.Get("/", handlers.GetUrlHandler(repo, m.ServerUrl))
+	m.Router.Post("/", handlers.SaveUrlHandler(repo, m.UrlRepo))
+	m.Router.Get("/{id}", handlers.GetUrlHandler(repo, m.UrlRepo))
 
 	return &m
 }
