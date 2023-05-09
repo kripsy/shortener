@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"io/ioutil"
@@ -7,14 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kripsy/shortener/internal/app/handlers"
 	"github.com/kripsy/shortener/internal/app/mymemory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_SaveUrlHandler(t *testing.T) {
-
+func TestSaveUrlHandler(t *testing.T) {
 	myMemory := mymemory.InitMyMemory(map[string]string{})
 
 	globalUrl := "http://localhost:8080"
@@ -29,7 +27,7 @@ func Test_SaveUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		myMemory   handlers.Repository
+		myMemory   Repository
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -61,7 +59,7 @@ func Test_SaveUrlHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handlers.SaveUrlHandler(tt.myMemory, globalUrl))
+			h := http.HandlerFunc(SaveUrlHandler(tt.myMemory, globalUrl))
 			h(w, request)
 			result := w.Result()
 
@@ -80,8 +78,7 @@ func Test_SaveUrlHandler(t *testing.T) {
 	}
 }
 
-func Test_GetUrlHandler(t *testing.T) {
-
+func TestGetUrlHandler(t *testing.T) {
 	myMemory := mymemory.InitMyMemory(map[string]string{
 		"https://google.com/": "82643f4619",
 	})
@@ -97,7 +94,7 @@ func Test_GetUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		myMemory   handlers.Repository
+		myMemory   Repository
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -126,7 +123,7 @@ func Test_GetUrlHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handlers.GetUrlHandler(tt.myMemory, globalUrl))
+			h := http.HandlerFunc(GetUrlHandler(tt.myMemory, globalUrl))
 			h(w, request)
 			result := w.Result()
 
