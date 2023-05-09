@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"io"
-	"io/ioutil"
+
 	"net/http"
 
 	"github.com/kripsy/shortener/internal/app/utils"
@@ -20,7 +20,7 @@ func SaveURLHandler(myMemory Repository, globalURL string) http.HandlerFunc {
 			http.Error(w, "", http.StatusBadRequest)
 			return
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "", http.StatusInternalServerError)
 			return

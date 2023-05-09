@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -71,7 +71,7 @@ func TestSaveURLHandler(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			if result.StatusCode == 201 {
 				assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-				shortURL, err := ioutil.ReadAll(result.Body)
+				shortURL, err := io.ReadAll(result.Body)
 				require.NoError(t, err)
 
 				err = result.Body.Close()
