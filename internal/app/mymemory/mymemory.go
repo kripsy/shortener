@@ -3,11 +3,7 @@ package mymemory
 import (
 	"crypto/rand"
 	"fmt"
-
-	"github.com/kripsy/shortener/internal/app/handlers"
 )
-
-var _ handlers.Repository = &MyMemory{}
 
 type MyMemory struct {
 	myMemory map[string]string

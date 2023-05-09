@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kripsy/shortener/internal/app/handlers"
 	"github.com/kripsy/shortener/internal/app/mymemory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +28,9 @@ func TestSaveUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		myMemory   handlers.Repository
+
+		myMemory   Repository
+
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -61,7 +62,9 @@ func TestSaveUrlHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handlers.SaveUrlHandler(tt.myMemory, globalUrl))
+
+			h := http.HandlerFunc(SaveUrlHandler(tt.myMemory, globalUrl))
+
 			h(w, request)
 			result := w.Result()
 
@@ -96,7 +99,8 @@ func TestGetUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		myMemory   handlers.Repository
+		myMemory   Repository
+
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -125,7 +129,8 @@ func TestGetUrlHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(handlers.GetUrlHandler(tt.myMemory, globalUrl))
+			h := http.HandlerFunc(GetUrlHandler(tt.myMemory, globalUrl))
+
 			h(w, request)
 			result := w.Result()
 
