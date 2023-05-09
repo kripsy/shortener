@@ -7,15 +7,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kripsy/shortener/internal/app/handlers"
+	"github.com/kripsy/shortener/internal/app/mymemory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_saveUrlHandler(t *testing.T) {
+func Test_SaveUrlHandler(t *testing.T) {
 
-	mymemory := map[string]string{
-		"https://google.com/": "http://localhost:8080/82643f4619",
-	}
+	myMemory := mymemory.InitMyMemory(map[string]string{})
+
+	globalUrl := "http://localhost:8080"
 
 	type want struct {
 		contentType string
@@ -27,7 +29,7 @@ func Test_saveUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		mymemory   map[string]string
+		myMemory   handlers.Repository
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -36,7 +38,7 @@ func Test_saveUrlHandler(t *testing.T) {
 			request:    "/",
 			methodType: http.MethodPost,
 			body:       "https://practicum.yandex.ru/",
-			mymemory:   mymemory,
+			myMemory:   myMemory,
 			want: want{
 				contentType: "plain/text",
 				statusCode:  201,
@@ -47,7 +49,7 @@ func Test_saveUrlHandler(t *testing.T) {
 			request:    "/",
 			methodType: http.MethodGet,
 			body:       "https://practicum.yandex.ru/123",
-			mymemory:   mymemory,
+			myMemory:   myMemory,
 			want: want{
 				statusCode: 400,
 			},
@@ -59,7 +61,7 @@ func Test_saveUrlHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(saveUrlHandler(mymemory))
+			h := http.HandlerFunc(handlers.SaveUrlHandler(tt.myMemory, globalUrl))
 			h(w, request)
 			result := w.Result()
 
@@ -78,11 +80,13 @@ func Test_saveUrlHandler(t *testing.T) {
 	}
 }
 
-func Test_getUrlHandler(t *testing.T) {
-	mymemory := map[string]string{
-		"https://google.com/": "82643f4619",
-	}
+func Test_GetUrlHandler(t *testing.T) {
 
+	myMemory := mymemory.InitMyMemory(map[string]string{
+		"https://google.com/": "82643f4619",
+	})
+
+	globalUrl := "http://localhost:8080"
 	type want struct {
 		statusCode int
 		Location   string
@@ -93,7 +97,7 @@ func Test_getUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		mymemory   map[string]string
+		myMemory   handlers.Repository
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -101,7 +105,7 @@ func Test_getUrlHandler(t *testing.T) {
 			name:       "Success get originalUrl",
 			request:    "/82643f4619",
 			methodType: http.MethodGet,
-			mymemory:   mymemory,
+			myMemory:   myMemory,
 			want: want{
 				statusCode: 307,
 				Location:   "https://google.com/",
@@ -111,7 +115,7 @@ func Test_getUrlHandler(t *testing.T) {
 			name:       "No success get originalUrl",
 			request:    "/82643f4610",
 			methodType: http.MethodGet,
-			mymemory:   mymemory,
+			myMemory:   myMemory,
 			want: want{
 				statusCode: 400,
 			},
@@ -122,7 +126,7 @@ func Test_getUrlHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(getUrlHandler(mymemory))
+			h := http.HandlerFunc(handlers.GetUrlHandler(tt.myMemory, globalUrl))
 			h(w, request)
 			result := w.Result()
 
