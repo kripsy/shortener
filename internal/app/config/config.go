@@ -1,14 +1,27 @@
 package config
 
+import (
+	"flag"
+)
+
 type Config struct {
-	Url  string
-	Port string
+	// it's address for exec server
+	UrlServer string
+
+	// it's address for prefix in store short url
+	UrlPrefixRepo string
 }
 
-func InitConfig(url, port string) *Config {
+func InitConfig() *Config {
+	// декларируем наборы флагов для подкоманд
+	urlServer := flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port")
+	urlPrefixRepo := flag.String("b", "http://localhost:8080", "Enter address exec http server as ip_address:port")
+
+	flag.Parse()
+
 	c := Config{
-		Url:  url,
-		Port: port,
+		UrlServer:     *urlServer,
+		UrlPrefixRepo: *urlPrefixRepo,
 	}
 	return &c
 }

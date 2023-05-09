@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/kripsy/shortener/internal/app/config"
@@ -10,11 +11,11 @@ import (
 
 func main() {
 
-	config := config.InitConfig("http://localhost", "8080")
+	config := config.InitConfig()
 	repo := mymemory.InitMyMemory(map[string]string{})
-	s := server.InitServer(config.Url+`:`+config.Port, repo)
-
-	err := http.ListenAndServe(`:`+config.Port, s.Router)
+	s := server.InitServer(config.UrlPrefixRepo, repo)
+	fmt.Println(config.UrlServer)
+	err := http.ListenAndServe(config.UrlServer, s.Router)
 	if err != nil {
 		panic(err)
 	}

@@ -13,6 +13,7 @@ import (
 )
 
 func TestSaveUrlHandler(t *testing.T) {
+
 	myMemory := mymemory.InitMyMemory(map[string]string{})
 
 	globalUrl := "http://localhost:8080"
@@ -27,7 +28,9 @@ func TestSaveUrlHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
+
 		myMemory   Repository
+
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -59,7 +62,9 @@ func TestSaveUrlHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
+
 			h := http.HandlerFunc(SaveUrlHandler(tt.myMemory, globalUrl))
+
 			h(w, request)
 			result := w.Result()
 
@@ -95,6 +100,7 @@ func TestGetUrlHandler(t *testing.T) {
 		body       string
 		methodType string
 		myMemory   Repository
+
 		want       want
 	}{
 		// TODO: Add test cases.
@@ -124,6 +130,7 @@ func TestGetUrlHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(GetUrlHandler(tt.myMemory, globalUrl))
+
 			h(w, request)
 			result := w.Result()
 
