@@ -1,21 +1,22 @@
 package server
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/kripsy/shortener/internal/app/handlers"
 )
 
 type MyServer struct {
-	Router    *mux.Router
+	Router    *chi.Mux
 	ServerUrl string
 }
 
 func InitServer(serverUrl string, repo handlers.Repository) *MyServer {
 	m := MyServer{}
 	m.ServerUrl = serverUrl
-	m.Router = mux.NewRouter()
-	m.Router.HandleFunc(`/`, handlers.SaveUrlHandler(repo, m.ServerUrl))
-	m.Router.HandleFunc(`/{id}`, handlers.GetUrlHandler(repo, m.ServerUrl))
+
+	m.Router = chi.NewRouter()
+	m.Router.Post("/", handlers.SaveUrlHandler(repo, m.ServerUrl))
+	m.Router.Get("/", handlers.GetUrlHandler(repo, m.ServerUrl))
 
 	return &m
 }
