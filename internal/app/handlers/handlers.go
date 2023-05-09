@@ -61,6 +61,6 @@ func GetURLHandler(myMemory Repository, globalURL string) http.HandlerFunc {
 		w.Header().Set("Content-Type", "plain/text")
 		w.Header().Set("Location", url)
 		w.WriteHeader(http.StatusTemporaryRedirect)
-		return
+
 	}
 }
