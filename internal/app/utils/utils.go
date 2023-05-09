@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func createShortUrl(input []byte) (string, error) {
+func createShortURL(input []byte) (string, error) {
 	// create slice 5 bytes
 	buf := make([]byte, 5)
 
@@ -21,6 +21,6 @@ func createShortUrl(input []byte) (string, error) {
 	return fmt.Sprintf("%x", buf), nil
 }
 
-func ReturnUrl(endpoint, globalUrl string) string {
-	return globalUrl + "/" + endpoint
+func ReturnURL(endpoint, globalURL string) string {
+	return globalURL + "/" + endpoint
 }

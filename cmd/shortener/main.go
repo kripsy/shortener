@@ -13,10 +13,10 @@ func main() {
 
 	config := config.InitConfig()
 	repo := mymemory.InitMyMemory(map[string]string{})
-	s := server.InitServer(config.UrlPrefixRepo, repo)
-	fmt.Printf("SERVER_ADDRESS: %s\n", config.UrlServer)
-	fmt.Printf("BASE_URL: %s\n", config.UrlPrefixRepo)
-	err := http.ListenAndServe(config.UrlServer, s.Router)
+	s := server.InitServer(config.URLPrefixRepo, repo)
+	fmt.Printf("SERVER_ADDRESS: %s\n", config.URLServer)
+	fmt.Printf("BASE_URL: %s\n", config.URLPrefixRepo)
+	err := http.ListenAndServe(config.URLServer, s.Router)
 	if err != nil {
 		panic(err)
 	}

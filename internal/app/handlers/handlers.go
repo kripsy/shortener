@@ -13,8 +13,8 @@ type Repository interface {
 	GetFromMemory(url []byte) (string, error)
 }
 
-// SaveUrlHandler — save original url, create short url into memory
-func SaveUrlHandler(myMemory Repository, globalUrl string) http.HandlerFunc {
+// SaveURLHandler — save original url, create short url into memory
+func SaveURLHandler(myMemory Repository, globalURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "", http.StatusBadRequest)
@@ -34,12 +34,12 @@ func SaveUrlHandler(myMemory Repository, globalUrl string) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "plain/text")
 		w.WriteHeader(http.StatusCreated)
-		io.WriteString(w, utils.ReturnUrl(val, globalUrl))
+		io.WriteString(w, utils.ReturnURL(val, globalURL))
 	}
 }
 
-// getUrlHandler — get origin url from memory by shortUrl
-func GetUrlHandler(myMemory Repository, globalUrl string) http.HandlerFunc {
+// GetURLHandler — get origin url from memory by shortURL
+func GetURLHandler(myMemory Repository, globalURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Method != http.MethodGet {
@@ -47,9 +47,9 @@ func GetUrlHandler(myMemory Repository, globalUrl string) http.HandlerFunc {
 			return
 		}
 		// remove first slash
-		shortUrl := (r.URL.Path)[1:]
+		shortURL := (r.URL.Path)[1:]
 
-		url, err := myMemory.GetFromMemory([]byte(shortUrl))
+		url, err := myMemory.GetFromMemory([]byte(shortURL))
 
 		// if we got error in getFromMemory - bad request
 		if err != nil {

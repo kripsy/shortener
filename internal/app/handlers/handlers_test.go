@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSaveUrlHandler(t *testing.T) {
+func TestSaveURLHandler(t *testing.T) {
 
 	myMemory := mymemory.InitMyMemory(map[string]string{})
 
-	globalUrl := "http://localhost:8080"
+	globalURL := "http://localhost:8080"
 
 	type want struct {
 		contentType string
@@ -29,9 +29,9 @@ func TestSaveUrlHandler(t *testing.T) {
 		body       string
 		methodType string
 
-		myMemory   Repository
+		myMemory Repository
 
-		want       want
+		want want
 	}{
 		// TODO: Add test cases.
 		{
@@ -63,7 +63,7 @@ func TestSaveUrlHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
 
-			h := http.HandlerFunc(SaveUrlHandler(tt.myMemory, globalUrl))
+			h := http.HandlerFunc(SaveURLHandler(tt.myMemory, globalURL))
 
 			h(w, request)
 			result := w.Result()
@@ -71,24 +71,24 @@ func TestSaveUrlHandler(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			if result.StatusCode == 201 {
 				assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-				shortUrl, err := ioutil.ReadAll(result.Body)
+				shortURL, err := ioutil.ReadAll(result.Body)
 				require.NoError(t, err)
 
 				err = result.Body.Close()
 				require.NoError(t, err)
 
-				assert.NotEmpty(t, shortUrl, "shortUrl is empty, but except not empty")
+				assert.NotEmpty(t, shortURL, "shortURL is empty, but except not empty")
 			}
 		})
 	}
 }
 
-func TestGetUrlHandler(t *testing.T) {
+func TestGetURLHandler(t *testing.T) {
 	myMemory := mymemory.InitMyMemory(map[string]string{
 		"https://google.com/": "82643f4619",
 	})
 
-	globalUrl := "http://localhost:8080"
+	globalURL := "http://localhost:8080"
 	type want struct {
 		statusCode int
 		Location   string
@@ -101,7 +101,7 @@ func TestGetUrlHandler(t *testing.T) {
 		methodType string
 		myMemory   Repository
 
-		want       want
+		want want
 	}{
 		// TODO: Add test cases.
 		{
@@ -129,7 +129,7 @@ func TestGetUrlHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetUrlHandler(tt.myMemory, globalUrl))
+			h := http.HandlerFunc(GetURLHandler(tt.myMemory, globalURL))
 
 			h(w, request)
 			result := w.Result()

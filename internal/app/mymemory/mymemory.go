@@ -23,7 +23,7 @@ func (m *MyMemory) CreateOrGetFromMemory(url []byte) (string, error) {
 		return val, nil
 	}
 	// input into our memory
-	if val, err := createShortUrl(url); err == nil {
+	if val, err := createShortURL(url); err == nil {
 		m.myMemory[string(url)] = val
 		return val, nil
 	} else {
@@ -35,7 +35,7 @@ func (m MyMemory) GetFromMemory(url []byte) (string, error) {
 
 	var val string
 	ok := false
-	// for every key from MYMEMORY check our shortUrl. If exist set `val = k` and `ok = true`
+	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
 
 	for k, v := range m.myMemory {
 		if v == string(url) {
@@ -49,10 +49,10 @@ func (m MyMemory) GetFromMemory(url []byte) (string, error) {
 		return val, nil
 	}
 	// key not exist
-	return "", fmt.Errorf("Not exists")
+	return "", fmt.Errorf("not exists")
 }
 
-func createShortUrl(input []byte) (string, error) {
+func createShortURL(input []byte) (string, error) {
 	// create slice 5 bytes
 	buf := make([]byte, 5)
 

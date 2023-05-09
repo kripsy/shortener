@@ -7,16 +7,16 @@ import (
 
 type MyServer struct {
 	Router  *chi.Mux
-	UrlRepo string
+	URLRepo string
 }
 
-func InitServer(UrlRepo string, repo handlers.Repository) *MyServer {
+func InitServer(URLRepo string, repo handlers.Repository) *MyServer {
 	m := MyServer{}
-	m.UrlRepo = UrlRepo
+	m.URLRepo = URLRepo
 
 	m.Router = chi.NewRouter()
-	m.Router.Post("/", handlers.SaveUrlHandler(repo, m.UrlRepo))
-	m.Router.Get("/{id}", handlers.GetUrlHandler(repo, m.UrlRepo))
+	m.Router.Post("/", handlers.SaveURLHandler(repo, m.URLRepo))
+	m.Router.Get("/{id}", handlers.GetURLHandler(repo, m.URLRepo))
 
 	return &m
 }
