@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"os"
 )
 
 type Config struct {
@@ -18,6 +19,14 @@ func InitConfig() *Config {
 	urlPrefixRepo := flag.String("b", "http://localhost:8080", "Enter address exec http server as ip_address:port")
 
 	flag.Parse()
+
+	if envSrvAddr := os.Getenv("SERVER_ADDRESS"); envSrvAddr != "" {
+
+		*urlServer = envSrvAddr
+	}
+	if envPrefixAddr := os.Getenv("BASE_URL"); envPrefixAddr != "" {
+		*urlPrefixRepo = envPrefixAddr
+	}
 
 	c := Config{
 		UrlServer:     *urlServer,

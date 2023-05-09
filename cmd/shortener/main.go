@@ -14,7 +14,8 @@ func main() {
 	config := config.InitConfig()
 	repo := mymemory.InitMyMemory(map[string]string{})
 	s := server.InitServer(config.UrlPrefixRepo, repo)
-	fmt.Println(config.UrlServer)
+	fmt.Printf("SERVER_ADDRESS: %s\n", config.UrlServer)
+	fmt.Printf("BASE_URL: %s\n", config.UrlPrefixRepo)
 	err := http.ListenAndServe(config.UrlServer, s.Router)
 	if err != nil {
 		panic(err)
