@@ -28,9 +28,9 @@ func InitConfig() *Config {
 		*URLPrefixRepo = envPrefixAddr
 	}
 
-	c := Config{
+	cfg := &Config{
 		URLServer:     *URLServer,
 		URLPrefixRepo: *URLPrefixRepo,
 	}
-	return &c
+	return cfg
 }
