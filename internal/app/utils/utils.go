@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func createShortURL(input []byte) (string, error) {
+func CreateShortURL() (string, error) {
 	// create slice 5 bytes
 	buf := make([]byte, 5)
 

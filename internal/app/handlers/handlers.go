@@ -9,8 +9,8 @@ import (
 )
 
 type Repository interface {
-	CreateOrGetFromMemory(url []byte) (string, error)
-	GetFromMemory(url []byte) (string, error)
+	CreateOrGetFromMemory(url string) (string, error)
+	GetFromMemory(url string) (string, error)
 }
 
 type HandlerType struct {
@@ -38,7 +38,7 @@ func (h *HandlerType) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val, err := h.myMemory.CreateOrGetFromMemory(body)
+	val, err := h.myMemory.CreateOrGetFromMemory(string(body))
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -59,7 +59,7 @@ func (h *HandlerType) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	// remove first slash
 	shortURL := (r.URL.Path)[1:]
 
-	url, err := h.myMemory.GetFromMemory([]byte(shortURL))
+	url, err := h.myMemory.GetFromMemory(shortURL)
 
 	// if we got error in getFromMemory - bad request
 	if err != nil {
