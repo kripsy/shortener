@@ -20,16 +20,16 @@ func InitMyMemory(initValue map[string]string) *MyMemory {
 func (m *MyMemory) CreateOrGetFromMemory(url string) (string, error) {
 	val, ok := m.myMemory[string(url)]
 	// If the key exists
-	if ok {
-		return val, nil
-	}
-	// input into our memory
-	if val, err := utils.CreateShortURL(); err == nil {
+	if !ok {
+		// input into our memory
+		val, err := utils.CreateShortURL()
+		if err != nil {
+			return "", err
+		}
 		m.myMemory[string(url)] = val
 		return val, nil
-	} else {
-		return "", err
 	}
+	return val, nil
 }
 
 func (m MyMemory) GetFromMemory(url string) (string, error) {
