@@ -18,8 +18,8 @@ func InitMyMemory(initValue map[string]string) *MyMemory {
 }
 
 func (m *MyMemory) CreateOrGetFromMemory(url string) (string, error) {
-	val, ok := m.myMemory[string(url)]
 	// If the key exists
+	val, ok := m.myMemory[string(url)]
 	if !ok {
 		// input into our memory
 		val, err := utils.CreateShortURL()
@@ -40,15 +40,16 @@ func (m MyMemory) GetFromMemory(url string) (string, error) {
 
 	for k, v := range m.myMemory {
 		if v == string(url) {
-
 			ok = true
 			val = k
+			break
 		}
 	}
-	// If the key exists
-	if ok {
-		return val, nil
+	if !ok {
+		// key not exist
+		return "", fmt.Errorf("not exists")
+
 	}
-	// key not exist
-	return "", fmt.Errorf("not exists")
+	// If the key exists
+	return val, nil
 }
