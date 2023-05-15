@@ -62,8 +62,8 @@ func TestSaveURLHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-
-			h := http.HandlerFunc(SaveURLHandler(tt.myMemory, globalURL))
+			ht := HandlerTypeInit(tt.myMemory, globalURL)
+			h := ht.SaveURLHandler
 
 			h(w, request)
 			result := w.Result()
@@ -129,7 +129,8 @@ func TestGetURLHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetURLHandler(tt.myMemory, globalURL))
+			ht := HandlerTypeInit(tt.myMemory, globalURL)
+			h := ht.GetURLHandler
 
 			h(w, request)
 			result := w.Result()
