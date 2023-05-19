@@ -9,25 +9,25 @@ import (
 )
 
 type Repository interface {
-	CreateOrGetFromMemory(url string) (string, error)
-	GetFromMemory(url string) (string, error)
+	CreateOrGetFromStorage(url string) (string, error)
+	GetFromStorage(url string) (string, error)
 }
 
-type HandlerType struct {
-	myMemory  Repository
+type APIHandler struct {
+	storage   Repository
 	globalURL string
 }
 
-func HandlerTypeInit(myMemory Repository, globalURL string) *HandlerType {
-	ht := &HandlerType{
-		myMemory:  myMemory,
+func APIHandlerInit(storage Repository, globalURL string) *APIHandler {
+	ht := &APIHandler{
+		storage:   storage,
 		globalURL: globalURL,
 	}
 	return ht
 }
 
-// SaveURLHandler — save original url, create short url into memory
-func (h *HandlerType) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
+// SaveURLHandler — save original url, create short url into storage
+func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -38,7 +38,7 @@ func (h *HandlerType) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val, err := h.myMemory.CreateOrGetFromMemory(string(body))
+	val, err := h.storage.CreateOrGetFromStorage(string(body))
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -49,8 +49,8 @@ func (h *HandlerType) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, utils.ReturnURL(val, h.globalURL))
 }
 
-// GetURLHandler — get origin url from memory by shortURL
-func (h *HandlerType) GetURLHandler(w http.ResponseWriter, r *http.Request) {
+// GetURLHandler — get origin url from storage by shortURL
+func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "", http.StatusBadRequest)
@@ -59,9 +59,9 @@ func (h *HandlerType) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	// remove first slash
 	shortURL := (r.URL.Path)[1:]
 
-	url, err := h.myMemory.GetFromMemory(shortURL)
+	url, err := h.storage.GetFromStorage(shortURL)
 
-	// if we got error in getFromMemory - bad request
+	// if we got error in getFromStorage - bad request
 	if err != nil {
 
 		http.Error(w, "", http.StatusBadRequest)
