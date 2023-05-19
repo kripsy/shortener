@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/storage"
 
 	"github.com/kripsy/shortener/internal/app/config"
@@ -12,8 +13,10 @@ import (
 )
 
 func main() {
+	defer logger.Log.Sync() // flushes buffer, if any
 
 	config := config.InitConfig()
+	logger.InitLog(config.LoggerLevel)
 	repo := storage.InitStorage(map[string]string{})
 	s := server.InitServer(config.URLPrefixRepo, repo)
 	fmt.Printf("SERVER_ADDRESS: %s\n", config.URLServer)
