@@ -7,14 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kripsy/shortener/internal/app/mymemory"
+	"github.com/kripsy/shortener/internal/app/storage"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSaveURLHandler(t *testing.T) {
 
-	myMemory := mymemory.InitMyMemory(map[string]string{})
+	storage := storage.InitStorage(map[string]string{})
 
 	globalURL := "http://localhost:8080"
 
@@ -29,7 +30,7 @@ func TestSaveURLHandler(t *testing.T) {
 		body       string
 		methodType string
 
-		myMemory Repository
+		storage Repository
 
 		want want
 	}{
@@ -39,7 +40,7 @@ func TestSaveURLHandler(t *testing.T) {
 			request:    "/",
 			methodType: http.MethodPost,
 			body:       "https://practicum.yandex.ru/",
-			myMemory:   myMemory,
+			storage:    storage,
 			want: want{
 				contentType: "plain/text",
 				statusCode:  201,
@@ -50,7 +51,7 @@ func TestSaveURLHandler(t *testing.T) {
 			request:    "/",
 			methodType: http.MethodGet,
 			body:       "https://practicum.yandex.ru/123",
-			myMemory:   myMemory,
+			storage:    storage,
 			want: want{
 				statusCode: 400,
 			},
@@ -62,7 +63,7 @@ func TestSaveURLHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht := HandlerTypeInit(tt.myMemory, globalURL)
+			ht := APIHandlerInit(tt.storage, globalURL)
 			h := ht.SaveURLHandler
 
 			h(w, request)
@@ -84,7 +85,7 @@ func TestSaveURLHandler(t *testing.T) {
 }
 
 func TestGetURLHandler(t *testing.T) {
-	myMemory := mymemory.InitMyMemory(map[string]string{
+	storage := storage.InitStorage(map[string]string{
 		"https://google.com/": "82643f4619",
 	})
 
@@ -99,7 +100,7 @@ func TestGetURLHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		myMemory   Repository
+		storage    Repository
 
 		want want
 	}{
@@ -108,7 +109,7 @@ func TestGetURLHandler(t *testing.T) {
 			name:       "Success get originalUrl",
 			request:    "/82643f4619",
 			methodType: http.MethodGet,
-			myMemory:   myMemory,
+			storage:    storage,
 			want: want{
 				statusCode: 307,
 				Location:   "https://google.com/",
@@ -118,7 +119,7 @@ func TestGetURLHandler(t *testing.T) {
 			name:       "No success get originalUrl",
 			request:    "/82643f4610",
 			methodType: http.MethodGet,
-			myMemory:   myMemory,
+			storage:    storage,
 			want: want{
 				statusCode: 400,
 			},
@@ -129,7 +130,7 @@ func TestGetURLHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht := HandlerTypeInit(tt.myMemory, globalURL)
+			ht := APIHandlerInit(tt.storage, globalURL)
 			h := ht.GetURLHandler
 
 			h(w, request)
