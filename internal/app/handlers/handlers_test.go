@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -8,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/kripsy/shortener/internal/app/storage"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -142,6 +142,84 @@ func TestGetURLHandler(t *testing.T) {
 			if result.StatusCode == http.StatusTemporaryRedirect {
 				assert.Equal(t, tt.want.Location, result.Header.Get("Location"))
 			}
+		})
+	}
+}
+
+func TestAPIHandler_SaveURLJSONHandler(t *testing.T) {
+	storage := storage.InitStorage(map[string]string{})
+
+	globalURL := "http://localhost:8080"
+
+	type want struct {
+		contentType string
+		statusCode  int
+	}
+
+	tests := []struct {
+		name        string
+		request     string
+		body        string
+		methodType  string
+		contentType string
+		storage     Repository
+
+		want want
+	}{
+		{
+			// TODO: Add test cases.
+			name:        "First success save originalUrl",
+			request:     "/",
+			methodType:  http.MethodPost,
+			body:        `{"url":"123"}`,
+			contentType: "application/json",
+			storage:     storage,
+			want: want{
+				contentType: "application/json",
+				statusCode:  201,
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name:        "Bad content-type",
+			request:     "/",
+			methodType:  http.MethodPost,
+			body:        `{"url":"123"}`,
+			contentType: "text/plain",
+			storage:     storage,
+			want: want{
+				contentType: "application/json",
+				statusCode:  400,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := strings.NewReader(tt.body)
+
+			request := httptest.NewRequest(tt.methodType, tt.request, body)
+			request.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+			ht := APIHandlerInit(tt.storage, globalURL)
+			h := ht.SaveURLJSONHandler
+
+			h(w, request)
+			result := w.Result()
+
+			shortURL, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			if result.StatusCode != 201 {
+				return
+			}
+
+			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
+			var resp URLResponseType
+			err = json.Unmarshal(shortURL, &resp)
+			require.NoError(t, err)
+
+			assert.NotEmpty(t, resp.Result, "Orig URL is empty, but except not empty")
+
 		})
 	}
 }
