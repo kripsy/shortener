@@ -20,6 +20,7 @@ func InitServer(URLRepo string, repo handlers.Repository) *MyServer {
 	m.Router.Use(middleware.RequestLogger)
 	m.Router.Post("/", ht.SaveURLHandler)
 	m.Router.Get("/{id}", ht.GetURLHandler)
+	m.Router.Post("/api/shorten", ht.SaveURLJSONHandler)
 
 	return m
 }
