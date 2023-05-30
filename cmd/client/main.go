@@ -2,8 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,7 +15,8 @@ import (
 )
 
 func main() {
-	endpoint := "http://localhost:8080/"
+
+	endpoint := "http://localhost:8080/api/shorten"
 	// контейнер данных для запроса
 	data := url.Values{}
 	// приглашение в консоли
@@ -32,13 +37,21 @@ func main() {
 	// пишем запрос
 	// запрос методом POST должен, помимо заголовков, содержать тело
 	// тело должно быть источником потокового чтения io.Reader
-	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(data.Encode()))
+	a := `{"url":"https://ya.ru"}`
+
+	cb := compress(a)
+
+	request, err := http.NewRequest(http.MethodPost, endpoint, &cb)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 	// в заголовках запроса указываем кодировку
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	request.Header.Add("Content-Type", "application/json")
+
+	request.Header.Add("Accept-Encoding", "gzip")
+	request.Header.Add("Content-Encoding", "gzip")
+
 	// отправляем запрос и получаем ответ
 	response, err := client.Do(request)
 	if err != nil {
@@ -54,6 +67,33 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+
 	// и печатаем его
 	fmt.Println(string(body))
+	fmt.Println((decompress(string(body))))
+}
+
+func compress(data string) bytes.Buffer {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	_, err := zw.Write([]byte(data))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := zw.Close(); err != nil {
+		log.Fatal(err)
+	}
+	return buf
+}
+
+func decompress(data string) string {
+	rdata := strings.NewReader(data)
+	r, err := gzip.NewReader(rdata)
+	log.Println(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+	s, _ := ioutil.ReadAll(r)
+	return (string(s))
 }
