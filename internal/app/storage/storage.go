@@ -18,7 +18,7 @@ func InitStorageFromFile(storage map[string]string) error {
 		return err
 	}
 	for _, v := range events {
-		storage[v.OriginalUrl] = v.ShortUrl
+		storage[v.OriginalURL] = v.ShortURL
 	}
 	return nil
 }

@@ -18,8 +18,8 @@ func InitFileStorageFile(fileName string) {
 
 type Event struct {
 	UUID        int    `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 type Producer struct {
@@ -89,8 +89,8 @@ func (c *Consumer) Close() error {
 func NewEvent(shortURL string, originalURL string) *Event {
 	e := &Event{
 		UUID:        int(uuid.New().ID()),
-		ShortUrl:    shortURL,
-		OriginalUrl: originalURL,
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
 	}
 	return e
 }
@@ -115,7 +115,7 @@ func addURL(events []Event) error {
 func readURL() ([]Event, error) {
 	fileName := FILENAME
 	Consumer, err := NewConsumer(fileName)
-	var events []Event = []Event{}
+	events := []Event{}
 	if err != nil {
 		logger.Log.Error("cannot create Consumer")
 		return nil, err
@@ -127,8 +127,8 @@ func readURL() ([]Event, error) {
 		if err == nil {
 			// fmt.Println(event)
 			logger.Log.Debug("New event", zap.Int("UUID", event.UUID),
-				zap.String("short_url", event.ShortUrl),
-				zap.String("original_url", event.OriginalUrl))
+				zap.String("short_url", event.ShortURL),
+				zap.String("original_url", event.OriginalURL))
 			events = append(events, *event)
 		}
 	}
