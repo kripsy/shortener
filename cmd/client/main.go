@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -94,6 +93,6 @@ func decompress(data string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s, _ := ioutil.ReadAll(r)
+	s, _ := io.ReadAll(r)
 	return (string(s))
 }
