@@ -17,6 +17,7 @@ func InitServer(URLRepo string, repo handlers.Repository) *MyServer {
 	m.URLRepo = URLRepo
 	ht := handlers.APIHandlerInit(repo, m.URLRepo)
 	m.Router = chi.NewRouter()
+	m.Router.Use(middleware.CompressMiddleware)
 	m.Router.Use(middleware.RequestLogger)
 	m.Router.Post("/", ht.SaveURLHandler)
 	m.Router.Get("/{id}", ht.GetURLHandler)
