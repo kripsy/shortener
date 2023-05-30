@@ -17,6 +17,7 @@ func main() {
 
 	config := config.InitConfig()
 	logger.InitLog(config.LoggerLevel)
+	storage.InitFileStorageFile(config.FileStoragePath)
 	repo := storage.InitStorage(map[string]string{})
 	s := server.InitServer(config.URLPrefixRepo, repo)
 	fmt.Printf("SERVER_ADDRESS: %s\n", config.URLServer)
