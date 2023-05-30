@@ -43,7 +43,8 @@ func CompressMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 		logger.Log.Debug("start CompressMiddleware")
-		if (r.Header.Get("Content-Type") != "application/json") && (r.Header.Get("Content-Type") == "text/html") {
+		// if (r.Header.Get("Content-Type") != "application/json") && (r.Header.Get("Content-Type") == "text/html") {
+		if r.Header.Get("Content-Encoding") != "gzip" {
 			logger.Log.Debug("continue without compress")
 			next.ServeHTTP(ow, r)
 			return
