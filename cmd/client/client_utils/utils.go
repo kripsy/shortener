@@ -1,4 +1,4 @@
-package client_utils
+package clientUtils
 
 import "net/http"
 
