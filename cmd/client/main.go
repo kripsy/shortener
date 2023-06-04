@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kripsy/shortener/cmd/client/clientmodels"
-	clientutils "github.com/kripsy/shortener/cmd/client/clientutils"
-	"github.com/kripsy/shortener/cmd/client/compress"
+	"github.com/kripsy/shortener/internal/client/clientcompress"
+	"github.com/kripsy/shortener/internal/client/clientmodels"
+	"github.com/kripsy/shortener/internal/client/clientutils"
 )
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cb := compress.Compress(string(reqData))
+	cb := clientcompress.Compress(string(reqData))
 
 	request, err := http.NewRequest(http.MethodPost, endpoint, &cb)
 	if err != nil {
@@ -75,5 +75,5 @@ func main() {
 
 	// и печатаем его
 	fmt.Println(string(body))
-	fmt.Println((compress.Decompress(string(body))))
+	fmt.Println((clientcompress.Decompress(string(body))))
 }
