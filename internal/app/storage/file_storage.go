@@ -6,14 +6,18 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/kripsy/shortener/internal/app/logger"
 	"go.uber.org/zap"
 )
 
-var FILENAME string
+type FileStorage struct {
+	FileName string
+}
 
-func InitFileStorageFile(fileName string) {
-	FILENAME = fileName
+func InitFileStorageFile(fileName string) *FileStorage {
+	fs := &FileStorage{
+		FileName: fileName,
+	}
+	return fs
 }
 
 type Event struct {
@@ -27,10 +31,10 @@ type Producer struct {
 	encoder json.Encoder
 }
 
-func NewProducer(fileName string) (*Producer, error) {
+func NewProducer(fileName string, myLogger *zap.Logger) (*Producer, error) {
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		logger.Log.Warn("errror create file to producer")
+		myLogger.Warn("errror create file to producer")
 		fmt.Println(err)
 		return nil, err
 	}
@@ -56,12 +60,12 @@ type Consumer struct {
 	decoder *json.Decoder
 }
 
-func NewConsumer(fileName string) (*Consumer, error) {
+func NewConsumer(fileName string, myLogger *zap.Logger) (*Consumer, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println(fileName)
 		fmt.Println(err)
-		logger.Log.Warn("errror create file to consumer")
+		myLogger.Warn("errror create file to consumer")
 		return nil, err
 	}
 
@@ -95,29 +99,28 @@ func NewEvent(shortURL string, originalURL string) *Event {
 	return e
 }
 
-func addURL(events []Event) error {
-	fileName := FILENAME
-	Producer, err := NewProducer(fileName)
+func addURL(events []Event, fileName string, myLogger *zap.Logger) error {
+
+	Producer, err := NewProducer(fileName, myLogger)
 	if err != nil {
-		logger.Log.Error("cannot create producer")
+		myLogger.Error("cannot create producer")
 		return err
 	}
 	defer Producer.Close()
 	for _, event := range events {
 		if err := Producer.WriteEvent(event); err != nil {
-			logger.Log.Error("error write event")
+			myLogger.Error("error write event")
 			return nil
 		}
 	}
 	return nil
 }
 
-func readURL() ([]Event, error) {
-	fileName := FILENAME
-	Consumer, err := NewConsumer(fileName)
+func readURL(fileName string, myLogger *zap.Logger) ([]Event, error) {
+	Consumer, err := NewConsumer(fileName, myLogger)
 	events := []Event{}
 	if err != nil {
-		logger.Log.Error("cannot create Consumer")
+		myLogger.Error("cannot create Consumer")
 		return nil, err
 	}
 
@@ -126,7 +129,7 @@ func readURL() ([]Event, error) {
 		event, err = Consumer.ReadEvent()
 		if err == nil {
 			// fmt.Println(event)
-			logger.Log.Debug("New event", zap.Int("UUID", event.UUID),
+			myLogger.Debug("New event", zap.Int("UUID", event.UUID),
 				zap.String("short_url", event.ShortURL),
 				zap.String("original_url", event.OriginalURL))
 			events = append(events, *event)

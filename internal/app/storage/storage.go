@@ -3,18 +3,20 @@ package storage
 import (
 	"fmt"
 
-	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/utils"
+	"go.uber.org/zap"
 )
 
 type Storage struct {
-	storage map[string]string
+	storage         map[string]string
+	MyLogger        *zap.Logger
+	fileStorageName string
 }
 
-func InitStorageFromFile(storage map[string]string) error {
-	events, err := readURL()
+func InitStorageFromFile(storage map[string]string, fs *FileStorage, myLogger *zap.Logger) error {
+	events, err := readURL(fs.FileName, myLogger)
 	if err != nil {
-		logger.Log.Warn("error read URLs")
+		myLogger.Warn("error read URLs")
 		return err
 	}
 	for _, v := range events {
@@ -23,11 +25,13 @@ func InitStorageFromFile(storage map[string]string) error {
 	return nil
 }
 
-func InitStorage(initValue map[string]string) *Storage {
-	m := Storage{}
-	m.storage = initValue
-	InitStorageFromFile(m.storage)
-
+func InitStorage(initValue map[string]string, fs *FileStorage, myLogger *zap.Logger) *Storage {
+	m := Storage{
+		storage:         initValue,
+		MyLogger:        myLogger,
+		fileStorageName: fs.FileName,
+	}
+	InitStorageFromFile(m.storage, fs, m.MyLogger)
 	return &m
 }
 
@@ -45,7 +49,7 @@ func (m *Storage) CreateOrGetFromStorage(url string) (string, error) {
 		e := make([]Event, 1)
 
 		e[0] = *NewEvent(val, url)
-		addURL(e)
+		addURL(e, m.fileStorageName, m.MyLogger)
 
 		return val, nil
 	}

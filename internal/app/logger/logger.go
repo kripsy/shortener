@@ -1,18 +1,20 @@
 package logger
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 )
 
-var Log *zap.Logger = zap.NewNop()
+// var Log *zap.Logger = zap.NewNop()
 
-func InitLog(level string) error {
+func InitLog(level string) (*zap.Logger, error) {
 
 	lvl, err := zap.ParseAtomicLevel(level)
 
 	if err != nil {
-		Log.Fatal("can't parse lovel zap logger", zap.String("message", err.Error()))
-		return err
+		fmt.Errorf("Failed to parse zap logger level: %s", err.Error())
+		return nil, err
 	}
 
 	cfg := zap.NewProductionConfig()
@@ -21,13 +23,12 @@ func InitLog(level string) error {
 	zl, err := cfg.Build()
 
 	if err != nil {
-		Log.Fatal("can't build zap logger", zap.String("message", err.Error()))
-		return err
+		fmt.Errorf("Failed to build zap logger: %s", err.Error())
+		return nil, err
 	}
 
-	Log = zl
-
-	Log.Info(`Logger level`, zap.String("logLevel", level))
-
-	return nil
+	log := zl
+	log.Info(`Logger level`, zap.String("logLevel", level))
+	fmt.Println(log)
+	return log, nil
 }

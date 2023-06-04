@@ -1,16 +1,28 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/kripsy/shortener/internal/app/logger"
 	"go.uber.org/zap"
 )
 
+type MyMiddleware struct {
+	MyLogger *zap.Logger
+}
+
+func InitMyMiddleware(myLogger *zap.Logger) *MyMiddleware {
+	fmt.Println(myLogger)
+	m := &MyMiddleware{
+		MyLogger: myLogger,
+	}
+	return m
+}
+
 // RequestLogger — middleware-логер для входящих HTTP-запросов.
-func RequestLogger(next http.Handler) http.Handler {
+func (m *MyMiddleware) RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// start duration work of handler
@@ -28,7 +40,7 @@ func RequestLogger(next http.Handler) http.Handler {
 
 		next.ServeHTTP(&lw, r)
 		duration := time.Since(start)
-		logger.Log.Info("got incoming HTTP request",
+		m.MyLogger.Info("got incoming HTTP request",
 			zap.String("URI", r.URL.String()),
 			zap.String("method", r.Method),
 			zap.Int64("duration (Nanoseconds)", duration.Nanoseconds()),
@@ -39,21 +51,21 @@ func RequestLogger(next http.Handler) http.Handler {
 }
 
 // CompressMiddleware — middleware for compress and decompress data.
-func CompressMiddleware(next http.Handler) http.Handler {
+func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w
-		logger.Log.Debug("start CompressMiddleware")
+		m.MyLogger.Debug("start CompressMiddleware")
 		// if (r.Header.Get("Content-Type") != "application/json") && (r.Header.Get("Content-Type") == "text/html") {
 		if r.Header.Get("Content-Encoding") != "gzip" {
-			logger.Log.Debug("continue without compress")
+			m.MyLogger.Debug("continue without compress")
 			next.ServeHTTP(ow, r)
 			return
 		}
-		logger.Log.Debug("continue with compress")
+		m.MyLogger.Debug("continue with compress")
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
-			logger.Log.Debug("Accept-Encoding gzip")
+			m.MyLogger.Debug("Accept-Encoding gzip")
 			cw := newCompressWriter(w)
 			ow = cw
 			defer cw.Close()
@@ -62,7 +74,7 @@ func CompressMiddleware(next http.Handler) http.Handler {
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
-			logger.Log.Debug("Content-Encoding gzip")
+			m.MyLogger.Debug("Content-Encoding gzip")
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

@@ -6,7 +6,6 @@ import (
 
 	"net/http"
 
-	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
@@ -19,12 +18,14 @@ type Repository interface {
 type APIHandler struct {
 	storage   Repository
 	globalURL string
+	MyLogger  *zap.Logger
 }
 
-func APIHandlerInit(storage Repository, globalURL string) *APIHandler {
+func APIHandlerInit(storage Repository, globalURL string, myLogger *zap.Logger) *APIHandler {
 	ht := &APIHandler{
 		storage:   storage,
 		globalURL: globalURL,
+		MyLogger:  myLogger,
 	}
 	return ht
 }
@@ -86,9 +87,9 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 // SaveURLHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 
-	logger.Log.Debug("start SaveURLJSONHandler")
+	h.MyLogger.Debug("start SaveURLJSONHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
-		logger.Log.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
+		h.MyLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
 			zap.String("Method", r.Method))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -97,7 +98,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	var payload URLRequestType
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		logger.Log.Debug("Empty body")
+		h.MyLogger.Debug("Empty body")
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -105,16 +106,16 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	err = json.Unmarshal(body, &payload)
 
 	if err != nil {
-		logger.Log.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
+		h.MyLogger.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
-	logger.Log.Debug("Unmarshall body", zap.Any("body", payload))
+	h.MyLogger.Debug("Unmarshall body", zap.Any("body", payload))
 
 	val, err := h.storage.CreateOrGetFromStorage(payload.URL)
 	if err != nil {
-		logger.Log.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+		h.MyLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -124,7 +125,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	})
 
 	if err != nil {
-		logger.Log.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
+		h.MyLogger.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
