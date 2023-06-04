@@ -2,22 +2,23 @@ package main
 
 import (
 	"bufio"
-	"bytes"
-	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
+
+	"github.com/kripsy/shortener/cmd/client/client_models"
+	"github.com/kripsy/shortener/cmd/client/client_utils"
+	"github.com/kripsy/shortener/cmd/client/compress"
 )
 
 func main() {
 
 	endpoint := "http://localhost:8080/api/shorten"
 	// контейнер данных для запроса
-	data := url.Values{}
+	var data client_models.Requset = client_models.Requset{}
 	// приглашение в консоли
 	fmt.Println("Введите длинный URL")
 	// открываем потоковое чтение из консоли
@@ -30,26 +31,31 @@ func main() {
 	}
 	long = strings.TrimSuffix(long, "\n")
 	// заполняем контейнер данными
-	data.Set("url", long)
+
+	data.URL = long
+
 	// добавляем HTTP-клиент
 	client := &http.Client{}
 	// пишем запрос
 	// запрос методом POST должен, помимо заголовков, содержать тело
 	// тело должно быть источником потокового чтения io.Reader
-	a := `{"url":"https://ya.ru"}`
+	reqData, err := json.Marshal(data)
 
-	cb := compress(a)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	cb := compress.Compress(string(reqData))
 
 	request, err := http.NewRequest(http.MethodPost, endpoint, &cb)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
-	// в заголовках запроса указываем кодировку
-	request.Header.Add("Content-Type", "application/json")
 
-	request.Header.Add("Accept-Encoding", "gzip")
-	request.Header.Add("Content-Encoding", "gzip")
+	// set headers
+	client_utils.SetHeaders(&request.Header)
 
 	// отправляем запрос и получаем ответ
 	response, err := client.Do(request)
@@ -69,30 +75,5 @@ func main() {
 
 	// и печатаем его
 	fmt.Println(string(body))
-	fmt.Println((decompress(string(body))))
-}
-
-func compress(data string) bytes.Buffer {
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	_, err := zw.Write([]byte(data))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := zw.Close(); err != nil {
-		log.Fatal(err)
-	}
-	return buf
-}
-
-func decompress(data string) string {
-	rdata := strings.NewReader(data)
-	r, err := gzip.NewReader(rdata)
-	log.Println(r)
-	if err != nil {
-		log.Fatal(err)
-	}
-	s, _ := io.ReadAll(r)
-	return (string(s))
+	fmt.Println((compress.Decompress(string(body))))
 }

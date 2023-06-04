@@ -157,7 +157,7 @@ func TestGetURLHandler(t *testing.T) {
 	}
 }
 
-func TestAPIHandler_SaveURLJSONHandler(t *testing.T) {
+func TestSaveURLJSONHandler(t *testing.T) {
 	storage := storage.InitStorage(map[string]string{})
 
 	globalURL := "http://localhost:8080"
