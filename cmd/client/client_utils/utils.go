@@ -7,5 +7,4 @@ func SetHeaders(h *http.Header) {
 	h.Add("Content-Type", "application/json")
 	h.Add("Accept-Encoding", "gzip")
 	h.Add("Content-Encoding", "gzip")
-	return
 }
