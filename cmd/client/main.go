@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kripsy/shortener/cmd/client/clientModels"
-	"github.com/kripsy/shortener/cmd/client/clientUtils"
+	"github.com/kripsy/shortener/cmd/client/clientmodels"
+	clientutils "github.com/kripsy/shortener/cmd/client/clientutils"
 	"github.com/kripsy/shortener/cmd/client/compress"
 )
 
@@ -18,7 +18,7 @@ func main() {
 
 	endpoint := "http://localhost:8080/api/shorten"
 	// контейнер данных для запроса
-	var data clientModels.Requset = clientModels.Requset{}
+	data := clientmodels.Requset{}
 	// приглашение в консоли
 	fmt.Println("Введите длинный URL")
 	// открываем потоковое чтение из консоли
@@ -55,7 +55,7 @@ func main() {
 	}
 
 	// set headers
-	clientUtils.SetHeaders(&request.Header)
+	clientutils.SetHeaders(&request.Header)
 
 	// отправляем запрос и получаем ответ
 	response, err := client.Do(request)
