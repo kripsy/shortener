@@ -4,21 +4,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
-	"github.com/kripsy/shortener/internal/app/storage"
-
-	"github.com/kripsy/shortener/internal/app/config"
-	"github.com/kripsy/shortener/internal/app/server"
 )
 
 func main() {
+	app, err := newApp()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	defer app.MyLogger.Sync() // flushes buffer, if any
 
-	config := config.InitConfig()
-	repo := storage.InitStorage(map[string]string{})
-	s := server.InitServer(config.URLPrefixRepo, repo)
-	fmt.Printf("SERVER_ADDRESS: %s\n", config.URLServer)
-	fmt.Printf("BASE_URL: %s\n", config.URLPrefixRepo)
-	err := http.ListenAndServe(config.URLServer, s.Router)
+	fmt.Printf("SERVER_ADDRESS: %s\n", app.Config.URLServer)
+	fmt.Printf("BASE_URL: %s\n", app.Config.URLPrefixRepo)
+	err = http.ListenAndServe(app.Config.URLServer, app.Server.Router)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
