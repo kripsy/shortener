@@ -8,14 +8,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSaveURLHandler(t *testing.T) {
+	myLogger, _ := logger.InitLog("Debug")
+	fs := storage.FileStorage{
+		FileName: "",
+	}
 
-	storage := storage.InitStorage(map[string]string{})
+	storage := storage.InitStorage(map[string]string{}, &fs, myLogger)
 
 	globalURL := "http://localhost:8080"
 
@@ -71,10 +76,11 @@ func TestSaveURLHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body := strings.NewReader(tt.body)
-
+			myLogger, err := logger.InitLog("Debug")
+			require.NoError(t, err)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht := APIHandlerInit(tt.storage, globalURL)
+			ht := APIHandlerInit(tt.storage, globalURL, myLogger)
 			h := ht.SaveURLHandler
 
 			h(w, request)
@@ -96,9 +102,12 @@ func TestSaveURLHandler(t *testing.T) {
 }
 
 func TestGetURLHandler(t *testing.T) {
+	myLogger, _ := logger.InitLog("Debug")
+	fs := storage.FileStorage{
+		FileName: "",
+	}
 	storage := storage.InitStorage(map[string]string{
-		"https://google.com/": "82643f4619",
-	})
+		"https://google.com/": "82643f4619"}, &fs, myLogger)
 
 	globalURL := "http://localhost:8080"
 	type want struct {
@@ -138,15 +147,17 @@ func TestGetURLHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			myLogger, err := logger.InitLog("Debug")
+			require.NoError(t, err)
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht := APIHandlerInit(tt.storage, globalURL)
+			ht := APIHandlerInit(tt.storage, globalURL, myLogger)
 			h := ht.GetURLHandler
 
 			h(w, request)
 			result := w.Result()
-			err := result.Body.Close()
+			err = result.Body.Close()
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 
@@ -158,7 +169,11 @@ func TestGetURLHandler(t *testing.T) {
 }
 
 func TestSaveURLJSONHandler(t *testing.T) {
-	storage := storage.InitStorage(map[string]string{})
+	myLogger, _ := logger.InitLog("Debug")
+	fs := storage.FileStorage{
+		FileName: "",
+	}
+	storage := storage.InitStorage(map[string]string{}, &fs, myLogger)
 
 	globalURL := "http://localhost:8080"
 
@@ -211,7 +226,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht := APIHandlerInit(tt.storage, globalURL)
+			ht := APIHandlerInit(tt.storage, globalURL, myLogger)
 			h := ht.SaveURLJSONHandler
 
 			h(w, request)
