@@ -46,10 +46,15 @@ func (m *Storage) CreateOrGetFromStorage(url string) (string, error) {
 		}
 		m.storage[url] = val
 
-		e := make([]Event, 1)
+		e := make([]Event, 0)
 
-		e[0] = *NewEvent(val, url)
-		addURL(e, m.fileStorageName, m.MyLogger)
+		if ne := NewEvent(val, url); ne != nil {
+			e = append(e, *ne)
+		}
+
+		if len(e) > 0 {
+			addURL(e, m.fileStorageName, m.MyLogger)
+		}
 
 		return val, nil
 	}
