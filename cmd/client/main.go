@@ -2,18 +2,23 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
+
+	"github.com/kripsy/shortener/internal/client/clientcompress"
+	"github.com/kripsy/shortener/internal/client/clientmodels"
+	"github.com/kripsy/shortener/internal/client/clientutils"
 )
 
 func main() {
-	endpoint := "http://localhost:8080/"
+
+	endpoint := "http://localhost:8080/api/shorten"
 	// контейнер данных для запроса
-	data := url.Values{}
+	data := clientmodels.Requset{}
 	// приглашение в консоли
 	fmt.Println("Введите длинный URL")
 	// открываем потоковое чтение из консоли
@@ -26,19 +31,32 @@ func main() {
 	}
 	long = strings.TrimSuffix(long, "\n")
 	// заполняем контейнер данными
-	data.Set("url", long)
+
+	data.URL = long
+
 	// добавляем HTTP-клиент
 	client := &http.Client{}
 	// пишем запрос
 	// запрос методом POST должен, помимо заголовков, содержать тело
 	// тело должно быть источником потокового чтения io.Reader
-	request, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(data.Encode()))
+	reqData, err := json.Marshal(data)
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
-	// в заголовках запроса указываем кодировку
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	cb := clientcompress.Compress(string(reqData))
+
+	request, err := http.NewRequest(http.MethodPost, endpoint, &cb)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// set headers
+	clientutils.SetHeaders(&request.Header)
+
 	// отправляем запрос и получаем ответ
 	response, err := client.Do(request)
 	if err != nil {
@@ -54,6 +72,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+
 	// и печатаем его
 	fmt.Println(string(body))
+	fmt.Println((clientcompress.Decompress(string(body))))
 }
