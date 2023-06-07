@@ -17,6 +17,9 @@ type Config struct {
 
 	// it's file storage path
 	FileStoragePath string
+
+	// it's database conn string
+	DatabaseDsn string
 }
 
 func InitConfig() *Config {
@@ -25,7 +28,8 @@ func InitConfig() *Config {
 	URLPrefixRepo := flag.String("b", "http://localhost:8080", "Enter address exec http server as ip_address:port. Or use BASE_URL env")
 	logLevel := flag.String("l", "Info", "log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")
 	fileStoragePath := flag.String("f", "/tmp/short-url-db.json", "set path for tmp file... Or use FILE_STORAGE_PATH env")
-
+	databaseDsn := flag.String("d", "", "set path for database... Or use DATABASE_DSN env. Example host=localhost user=urls password=jf6y5SfnxsuR sslmode=disable port=5432")
+	//host=localhost user=urls password=jf6y5SfnxsuR sslmode=disable port=5432
 	flag.Parse()
 
 	if envSrvAddr := os.Getenv("SERVER_ADDRESS"); envSrvAddr != "" {
@@ -44,11 +48,16 @@ func InitConfig() *Config {
 		*fileStoragePath = envFileStoragePath
 	}
 
+	if envDatabaseDsn := os.Getenv("DATABASE_DSN"); envDatabaseDsn != "" {
+		*databaseDsn = envDatabaseDsn
+	}
+
 	cfg := &Config{
 		URLServer:       *URLServer,
 		URLPrefixRepo:   *URLPrefixRepo,
 		LoggerLevel:     *logLevel,
 		FileStoragePath: *fileStoragePath,
+		DatabaseDsn:     *databaseDsn,
 	}
 	return cfg
 }

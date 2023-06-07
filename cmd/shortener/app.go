@@ -32,8 +32,9 @@ func newApp() (*app, error) {
 	fs := storage.InitFileStorageFile(config.FileStoragePath)
 	s := storage.InitStorage(map[string]string{}, fs, myLogger)
 
-	db, err := db.InitDB("localhost", "5432", "urls", "jf6y5SfnxsuR", "urls")
-	if err != nil {
+	// db, err := db.InitDB("localhost", "5432", "urls", "jf6y5SfnxsuR", "urls")
+	db, err := db.InitDB(config.DatabaseDsn)
+	if err != nil && config.DatabaseDsn != "" {
 		myLogger.Debug("Failed init DB", zap.String("msg", err.Error()))
 		return nil, err
 	}

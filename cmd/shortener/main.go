@@ -14,7 +14,9 @@ func main() {
 	}
 	defer app.MyLogger.Sync() // flushes buffer, if any
 
-	defer app.Server.MyDB.Close()
+	if app.Config.DatabaseDsn != "" {
+		defer app.Server.MyDB.Close()
+	}
 
 	fmt.Printf("SERVER_ADDRESS: %s\n", app.Config.URLServer)
 	fmt.Printf("BASE_URL: %s\n", app.Config.URLPrefixRepo)
