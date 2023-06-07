@@ -345,8 +345,8 @@ func TestAPIHandler_PingDBHandler(t *testing.T) {
 
 			h(w, request)
 			result := w.Result()
-
 			require.Equal(t, tt.want.statusCode, result.StatusCode)
+			result.Body.Close()
 		})
 	}
 }
