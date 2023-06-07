@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kripsy/shortener/internal/app/config"
+	"github.com/kripsy/shortener/internal/app/db"
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/server"
 	"github.com/kripsy/shortener/internal/app/storage"
@@ -30,7 +31,20 @@ func newApp() (*app, error) {
 
 	fs := storage.InitFileStorageFile(config.FileStoragePath)
 	s := storage.InitStorage(map[string]string{}, fs, myLogger)
-	srv := server.InitServer(config.URLPrefixRepo, s, myLogger)
+
+	db, err := db.InitDB("localhost", "5432", "urls", "jf6y5SfnxsuR", "urls")
+	if err != nil {
+		myLogger.Debug("Failed init DB", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	srv, err := server.InitServer(config.URLPrefixRepo, s, myLogger, db)
+	if err != nil {
+		myLogger.Debug("Failed init server", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	srv.MyDB = db
+
 	return &app{
 		Config:      config,
 		MyLogger:    myLogger,

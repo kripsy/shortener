@@ -6,6 +6,7 @@ import (
 
 	"net/http"
 
+	"github.com/kripsy/shortener/internal/app/db"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
@@ -19,15 +20,18 @@ type APIHandler struct {
 	storage   Repository
 	globalURL string
 	MyLogger  *zap.Logger
+	MyDB      db.DB
 }
 
-func APIHandlerInit(storage Repository, globalURL string, myLogger *zap.Logger) *APIHandler {
+func APIHandlerInit(storage Repository, globalURL string, myLogger *zap.Logger, myDB db.DB) (*APIHandler, error) {
+
 	ht := &APIHandler{
 		storage:   storage,
 		globalURL: globalURL,
 		MyLogger:  myLogger,
+		MyDB:      myDB,
 	}
-	return ht
+	return ht, nil
 }
 
 type URLResponseType struct {
@@ -133,4 +137,17 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(resp)
+}
+
+// PingDBHandler — handler to check success db connection
+func (h *APIHandler) PingDBHandler(w http.ResponseWriter, r *http.Request) {
+
+	h.MyLogger.Debug("start PingDBHandler")
+	err := h.MyDB.Ping()
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+
 }

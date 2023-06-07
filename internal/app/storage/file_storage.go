@@ -63,9 +63,9 @@ type Consumer struct {
 func NewConsumer(fileName string, myLogger *zap.Logger) (*Consumer, error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
-		fmt.Println(fileName)
-		fmt.Println(err)
-		myLogger.Warn("errror create file to consumer")
+		// fmt.Println(fileName)
+		// fmt.Println(err)
+		myLogger.Warn("errror create file to consumer", zap.String("msg", err.Error()))
 		return nil, err
 	}
 

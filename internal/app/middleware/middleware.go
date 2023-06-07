@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -14,7 +13,7 @@ type MyMiddleware struct {
 }
 
 func InitMyMiddleware(myLogger *zap.Logger) *MyMiddleware {
-	fmt.Println(myLogger)
+	// fmt.Println(myLogger)
 	m := &MyMiddleware{
 		MyLogger: myLogger,
 	}
