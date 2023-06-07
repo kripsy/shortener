@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,11 +10,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/kripsy/shortener/internal/app/db"
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/mocks"
 	"github.com/kripsy/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestSaveURLHandler(t *testing.T) {
@@ -267,33 +270,83 @@ func TestSaveURLJSONHandler(t *testing.T) {
 	}
 }
 
-// func TestAPIHandler_PingDBHandler(t *testing.T) {
-// 	type fields struct {
-// 		storage   Repository
-// 		globalURL string
-// 		MyLogger  *zap.Logger
-// 		MyDB      *db.MyDB
-// 	}
-// 	type args struct {
-// 		w http.ResponseWriter
-// 		r *http.Request
-// 	}
-// 	tests := []struct {
-// 		name   string
-// 		fields fields
-// 		args   args
-// 	}{
-// 		// TODO: Add test cases.
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			h := &APIHandler{
-// 				storage:   tt.fields.storage,
-// 				globalURL: tt.fields.globalURL,
-// 				MyLogger:  tt.fields.MyLogger,
-// 				MyDB:      tt.fields.MyDB,
-// 			}
-// 			h.PingDBHandler(tt.args.w, tt.args.r)
-// 		})
-// 	}
-// }
+func TestAPIHandler_PingDBHandler(t *testing.T) {
+	type fields struct {
+		storage   Repository
+		globalURL string
+		MyLogger  *zap.Logger
+		MyDB      db.DB
+	}
+
+	type want struct {
+		statusCode int
+	}
+
+	tests := []struct {
+		name        string
+		request     string
+		body        string
+		methodType  string
+		contentType string
+		success     bool
+		fields      fields
+		want        want
+	}{
+		// TODO: Add test cases.
+		{
+			// TODO: Add test cases.
+			name:        "First success ping",
+			request:     "/ping",
+			methodType:  http.MethodGet,
+			success:     true,
+			contentType: "application/json",
+			want: want{
+				statusCode: 200,
+			},
+		},
+		{
+			// TODO: Add test cases.
+			name:        "First failed ping",
+			request:     "/ping",
+			methodType:  http.MethodGet,
+			success:     false,
+			contentType: "application/json",
+			want: want{
+				statusCode: 500,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mdb := mocks.NewMockDB(ctrl)
+
+			if tt.success {
+				mdb.EXPECT().Ping().Return(nil)
+			} else {
+				mdb.EXPECT().Ping().Return(errors.New("test"))
+			}
+
+			request := httptest.NewRequest(tt.methodType, tt.request, nil)
+			request.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+
+			ht := &APIHandler{
+				storage:   tt.fields.storage,
+				globalURL: tt.fields.globalURL,
+				MyLogger:  tt.fields.MyLogger,
+				MyDB:      mdb,
+			}
+
+			ht.MyLogger, _ = logger.InitLog("Debug")
+			h := ht.PingDBHandler
+
+			h(w, request)
+			result := w.Result()
+
+			require.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
