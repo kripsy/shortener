@@ -19,25 +19,6 @@ type PostgresDB struct {
 
 var _ DB = &PostgresDB{}
 
-// func InitDB(host, port, user, password, dbName string) (*PostgresDB, error) {
-// 	ps := fmt.Sprintf("host=%s user=%s password=%s sslmode=disable port=%s",
-// 		host, user, password, port)
-
-// 	db, err := sql.Open("pgx", ps)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	m := &PostgresDB{
-// 		DB: db,
-// 	}
-
-//		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-//		defer cancel()
-//		if err = db.PingContext(ctx); err != nil {
-//			return nil, err
-//		}
-//		return m, nil
-//	}
 func InitDB(connString string) (*PostgresDB, error) {
 
 	db, err := sql.Open("pgx", connString)
@@ -63,4 +44,11 @@ func (mdb PostgresDB) Ping() error {
 
 func (mdb PostgresDB) Close() {
 	mdb.DB.Close()
+}
+
+func (mdb PostgresDB) CreateOrGetFromStorage(url string) (string, error) {
+	return "", nil
+}
+func (mdb PostgresDB) GetFromStorage(url string) (string, error) {
+	return "", nil
 }

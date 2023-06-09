@@ -6,7 +6,6 @@ import (
 
 	"net/http"
 
-	"github.com/kripsy/shortener/internal/app/db"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
@@ -14,22 +13,22 @@ import (
 type Repository interface {
 	CreateOrGetFromStorage(url string) (string, error)
 	GetFromStorage(url string) (string, error)
+	Close()
+	Ping() error
 }
 
 type APIHandler struct {
-	storage   Repository
-	globalURL string
-	MyLogger  *zap.Logger
-	MyDB      db.DB
+	repository Repository
+	globalURL  string
+	myLogger   *zap.Logger
 }
 
-func APIHandlerInit(storage Repository, globalURL string, myLogger *zap.Logger, myDB db.DB) (*APIHandler, error) {
+func APIHandlerInit(repository Repository, globalURL string, myLogger *zap.Logger) (*APIHandler, error) {
 
 	ht := &APIHandler{
-		storage:   storage,
-		globalURL: globalURL,
-		MyLogger:  myLogger,
-		MyDB:      myDB,
+		repository: repository,
+		globalURL:  globalURL,
+		myLogger:   myLogger,
 	}
 	return ht, nil
 }
@@ -54,7 +53,7 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	val, err := h.storage.CreateOrGetFromStorage(string(body))
+	val, err := h.repository.CreateOrGetFromStorage(string(body))
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -74,7 +73,7 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	// remove first slash
 	shortURL := (r.URL.Path)[1:]
 
-	url, err := h.storage.GetFromStorage(shortURL)
+	url, err := h.repository.GetFromStorage(shortURL)
 
 	// if we got error in getFromStorage - bad request
 	if err != nil {
@@ -91,9 +90,9 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 // SaveURLHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 
-	h.MyLogger.Debug("start SaveURLJSONHandler")
+	h.myLogger.Debug("start SaveURLJSONHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
-		h.MyLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
+		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
 			zap.String("Method", r.Method))
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -102,7 +101,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	var payload URLRequestType
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.MyLogger.Debug("Empty body")
+		h.myLogger.Debug("Empty body")
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
@@ -110,16 +109,16 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	err = json.Unmarshal(body, &payload)
 
 	if err != nil {
-		h.MyLogger.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
+		h.myLogger.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
-	h.MyLogger.Debug("Unmarshall body", zap.Any("body", payload))
+	h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
 
-	val, err := h.storage.CreateOrGetFromStorage(payload.URL)
+	val, err := h.repository.CreateOrGetFromStorage(payload.URL)
 	if err != nil {
-		h.MyLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -129,7 +128,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	})
 
 	if err != nil {
-		h.MyLogger.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
+		h.myLogger.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -142,8 +141,8 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 // PingDBHandler — handler to check success db connection
 func (h *APIHandler) PingDBHandler(w http.ResponseWriter, r *http.Request) {
 
-	h.MyLogger.Debug("start PingDBHandler")
-	err := h.MyDB.Ping()
+	h.myLogger.Debug("start PingDBHandler")
+	err := h.repository.Ping()
 	if err != nil {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
