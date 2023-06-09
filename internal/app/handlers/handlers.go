@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"time"
 
 	"net/http"
 
@@ -11,8 +13,8 @@ import (
 )
 
 type Repository interface {
-	CreateOrGetFromStorage(url string) (string, error)
-	GetFromStorage(url string) (string, error)
+	CreateOrGetFromStorage(ctx context.Context, url string) (string, error)
+	GetOriginalURLFromStorage(ctx context.Context, url string) (string, error)
 	Close()
 	Ping() error
 }
@@ -52,8 +54,9 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-
-	val, err := h.repository.CreateOrGetFromStorage(string(body))
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body))
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
 		return
@@ -72,8 +75,9 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// remove first slash
 	shortURL := (r.URL.Path)[1:]
-
-	url, err := h.repository.GetFromStorage(shortURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	url, err := h.repository.GetOriginalURLFromStorage(ctx, shortURL)
 
 	// if we got error in getFromStorage - bad request
 	if err != nil {
@@ -116,7 +120,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
 
-	val, err := h.repository.CreateOrGetFromStorage(payload.URL)
+	val, err := h.repository.CreateOrGetFromStorage(context.Background(), payload.URL)
 	if err != nil {
 		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
 		http.Error(w, "", http.StatusBadRequest)

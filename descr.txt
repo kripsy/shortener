@@ -1,0 +1,6 @@
+run with db
+go run ./cmd/shortener/main.go -l "Debug" -d "host=localhost user=urls password=jf6y5Sfnxsu
+R sslmode=disable port=5432"
+
+run with fils
+go run ./cmd/shortener/main.go -l "Debug" -f "./test.json"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/kripsy/shortener/internal/app/config"
 	"github.com/kripsy/shortener/internal/app/db"
@@ -18,8 +19,6 @@ import (
 type App struct {
 	appConfig *config.Config
 	appLogger *zap.Logger
-	// FileStorage *storage.FileStorage
-	// Storage     *storage.Storage
 	appServer *server.MyServer
 	appRepo   handlers.Repository
 }
@@ -52,23 +51,26 @@ func NewApp(ctx context.Context) (*App, error) {
 
 	switch cfg.RepositoryType {
 	case config.PostgresDB:
-		db, err := db.InitDB(cfg.DatabaseDsn)
-		if err != nil && cfg.DatabaseDsn != "" {
+		db, err := db.InitDB(cfg.DatabaseDsn, myLogger)
+		if err != nil {
 			myLogger.Debug("Failed init DB", zap.String("msg", err.Error()))
 			return nil, err
 		}
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		db.CreateTables(ctx, myLogger)
 		repo = db
-		break
+
 	case config.FileStorage:
 		fs, err := filestorage.InitFileStorageFile(cfg.FileStoragePath, myLogger)
 		if err != nil {
 			myLogger.Debug("Failed init filestorage", zap.String("msg", err.Error()))
 			return nil, err
 		}
-		fmt.Println(fs)
-		fmt.Println(err)
 		repo = fs
-		break
+		// fmt.Println(fs)
+		// fmt.Println(err)
+
 	case config.InMemory:
 		inmemory, err := inmemorystorage.InitInMemoryStorage(map[string]string{}, myLogger)
 		if err != nil {
@@ -76,7 +78,6 @@ func NewApp(ctx context.Context) (*App, error) {
 			return nil, err
 		}
 		repo = inmemory
-		break
 	}
 
 	// fs := storage.InitFileStorageFile(cfg.FileStoragePath)

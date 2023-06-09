@@ -1,6 +1,7 @@
 package filestorage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -109,7 +110,7 @@ func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
-func (fs *FileStorage) CreateOrGetFromStorage(url string) (string, error) {
+func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
 
 	for originalURL, shortURL := range fs.memoryStorage {
 		if originalURL == url {
@@ -139,14 +140,14 @@ func (fs *FileStorage) CreateOrGetFromStorage(url string) (string, error) {
 	return shortURL, nil
 }
 
-func (fs *FileStorage) GetFromStorage(url string) (string, error) { //([]models.Event, error)
+func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) { //([]models.Event, error)
 
 	var val string
 	ok := false
 	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
 
 	for k, v := range fs.memoryStorage {
-		if v == string(url) {
+		if v == string(shortURL) {
 			ok = true
 			val = k
 			break

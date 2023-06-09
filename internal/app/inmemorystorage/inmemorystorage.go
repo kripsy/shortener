@@ -1,6 +1,7 @@
 package inmemorystorage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/kripsy/shortener/internal/app/utils"
@@ -32,7 +33,7 @@ func InitInMemoryStorage(initValue map[string]string, myLogger *zap.Logger) (*In
 	return m, nil
 }
 
-func (m *InMemoryStorage) CreateOrGetFromStorage(url string) (string, error) {
+func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
 	// If the key exists
 	val, ok := m.storage[url]
 	if !ok {
@@ -58,14 +59,14 @@ func (m *InMemoryStorage) CreateOrGetFromStorage(url string) (string, error) {
 	return val, nil
 }
 
-func (m InMemoryStorage) GetFromStorage(url string) (string, error) {
+func (m InMemoryStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) {
 
 	var val string
 	ok := false
 	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
 
 	for k, v := range m.storage {
-		if v == string(url) {
+		if v == string(shortURL) {
 			ok = true
 			val = k
 			break

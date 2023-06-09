@@ -6,6 +6,9 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/kripsy/shortener/internal/app/models"
+	"github.com/kripsy/shortener/internal/app/utils"
+	"go.uber.org/zap"
 )
 
 type DB interface {
@@ -14,27 +17,60 @@ type DB interface {
 }
 
 type PostgresDB struct {
-	DB *sql.DB
+	DB       *sql.DB
+	myLogger *zap.Logger
 }
 
 var _ DB = &PostgresDB{}
 
-func InitDB(connString string) (*PostgresDB, error) {
+func InitDB(connString string, myLogger *zap.Logger) (*PostgresDB, error) {
 
 	db, err := sql.Open("pgx", connString)
 	if err != nil {
+		myLogger.Debug("Fail open db connection", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	m := &PostgresDB{
-		DB: db,
+		DB:       db,
+		myLogger: myLogger,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	if err = db.PingContext(ctx); err != nil {
+		myLogger.Debug("Fail to ping db", zap.String("msg", err.Error()))
 		return nil, err
 	}
 	return m, nil
+}
+
+func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) error {
+
+	query := `-- Table: public.urls
+
+	-- DROP TABLE IF EXISTS public.urls;
+	
+	CREATE TABLE IF NOT EXISTS public.urls
+	(
+		id bigint NOT NULL,
+		original_url text COLLATE pg_catalog."default" NOT NULL,
+		short_url text COLLATE pg_catalog."default" NOT NULL,
+		CONSTRAINT urls_pkey PRIMARY KEY (id)
+	)
+	
+	TABLESPACE pg_default;
+	
+	ALTER TABLE IF EXISTS public.urls
+		OWNER to urls;`
+
+	_, err := mdb.DB.ExecContext(ctx, query)
+
+	if err != nil {
+		myLogger.Debug("Fail to create table", zap.String("msg", err.Error()))
+		return err
+	}
+
+	return nil
 }
 
 func (mdb PostgresDB) Ping() error {
@@ -46,9 +82,69 @@ func (mdb PostgresDB) Close() {
 	mdb.DB.Close()
 }
 
-func (mdb PostgresDB) CreateOrGetFromStorage(url string) (string, error) {
-	return "", nil
+func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
+	shortURL, err := mdb.isOriginalURLExist(ctx, url)
+	if err != nil {
+		mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
+	}
+	if shortURL != "" {
+		mdb.myLogger.Debug("URL is exist")
+		return shortURL, nil
+	}
+	mdb.myLogger.Debug("URL not exists")
+
+	shortURL, err = utils.CreateShortURL()
+	if err != nil {
+		return "", err
+	}
+	event := models.NewEvent(shortURL, url)
+	query := `INSERT INTO public.urls(id, original_url, short_url)
+	VALUES ($1, $2, $3);`
+	_, err = mdb.DB.ExecContext(ctx, query, event.UUID, event.OriginalURL, event.ShortURL)
+	if err != nil {
+		mdb.myLogger.Debug("Failed exec CreateOrGetFromStorage", zap.String("msg", err.Error()))
+		return "", err
+	}
+	return shortURL, nil
 }
-func (mdb PostgresDB) GetFromStorage(url string) (string, error) {
-	return "", nil
+func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) {
+	mdb.myLogger.Debug("start GetOriginalURLFromStorage")
+	query := `SELECT original_url
+	FROM public.urls where short_url = $1;`
+	var originalURL string
+	row := mdb.DB.QueryRowContext(ctx, query, shortURL)
+
+	err := row.Scan(&originalURL)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			mdb.myLogger.Debug("URL not exist", zap.String("msg", err.Error()))
+			return "", err
+		}
+		mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
+		return "", err
+	}
+
+	return originalURL, nil
+}
+
+func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (string, error) {
+	mdb.myLogger.Debug("start isOriginalURLExist")
+	query := `SELECT short_url
+	FROM public.urls where original_url = $1;`
+	var short_url string
+	row := mdb.DB.QueryRowContext(ctx, query, url)
+
+	err := row.Scan(&short_url)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			mdb.myLogger.Debug("URL not exist", zap.String("msg", err.Error()))
+			return "", nil
+		}
+		mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
+		return "", err
+	}
+
+	return short_url, nil
 }
