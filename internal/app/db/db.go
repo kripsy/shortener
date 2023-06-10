@@ -34,7 +34,7 @@ func InitDB(connString string, myLogger *zap.Logger) (*PostgresDB, error) {
 		DB:       db,
 		myLogger: myLogger,
 	}
-
+	myLogger.Debug("InitDB", zap.String("connString", connString))
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	if err = db.PingContext(ctx); err != nil {
@@ -132,10 +132,10 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 	mdb.myLogger.Debug("start isOriginalURLExist")
 	query := `SELECT short_url
 	FROM public.urls where original_url = $1;`
-	var short_url string
+	var shortURL string
 	row := mdb.DB.QueryRowContext(ctx, query, url)
 
-	err := row.Scan(&short_url)
+	err := row.Scan(&shortURL)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -146,5 +146,5 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 		return "", err
 	}
 
-	return short_url, nil
+	return shortURL, nil
 }
