@@ -69,16 +69,17 @@ func InitConfig() *Config {
 	switch {
 	case *databaseDsn != "":
 		fmt.Println("using PostgresDB")
+		fmt.Println(*databaseDsn)
 		repositoryType = PostgresDB
-		break
+
 	case *fileStoragePath != "":
 		fmt.Println("using FileStorage")
 		repositoryType = FileStorage
-		break
+
 	default:
 		fmt.Println("using InMemory")
 		repositoryType = InMemory
-		break
+
 	}
 
 	cfg := &Config{
