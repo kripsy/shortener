@@ -35,7 +35,6 @@ type Config struct {
 }
 
 func InitConfig() *Config {
-
 	var repositoryType RepositoryType
 
 	// декларируем наборы флагов для подкоманд
@@ -70,6 +69,11 @@ func InitConfig() *Config {
 	case *databaseDsn != "":
 		fmt.Println("using PostgresDB")
 		fmt.Println(*databaseDsn)
+		if *databaseDsn == "postgres:5432/praktikum?sslmode=disable" {
+			fmt.Println("change connstring")
+			*databaseDsn = "postgres://postgres@localhost:5432/praktikum?sslmode=disable"
+
+		}
 		repositoryType = PostgresDB
 
 	case *fileStoragePath != "":

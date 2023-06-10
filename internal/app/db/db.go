@@ -26,6 +26,7 @@ var _ DB = &PostgresDB{}
 func InitDB(connString string, myLogger *zap.Logger) (*PostgresDB, error) {
 
 	db, err := sql.Open("pgx", connString)
+
 	if err != nil {
 		myLogger.Debug("Fail open db connection", zap.String("msg", err.Error()))
 		return nil, err
@@ -61,7 +62,7 @@ func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) er
 	TABLESPACE pg_default;
 	
 	ALTER TABLE IF EXISTS public.urls
-		OWNER to urls;`
+		OWNER to postgres;`
 
 	_, err := mdb.DB.ExecContext(ctx, query)
 
