@@ -10,24 +10,38 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/kripsy/shortener/internal/app/db"
+	"go.uber.org/zap"
+
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/mocks"
-	"github.com/kripsy/shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
-func TestSaveURLHandler(t *testing.T) {
-	myLogger, _ := logger.InitLog("Debug")
-	fs := storage.FileStorage{
-		FileName: "",
+// t.Setenv("SERVER_ADDRESS", "localhost:8080")
+// t.Setenv("BASE_URL", "http://localhost:8080")
+// t.Setenv("LOG_LEVEL", "Info")
+// t.Setenv("DATABASE_DSN", "")
+// t.Setenv("FILE_STORAGE_PATH", "")
+// envPrefixAddr := os.Getenv("BASE_URL")
+type TestParams struct {
+	TestLogger     *zap.Logger
+	TestPrefixAddr string
+}
+
+func getParamsForTest() *TestParams {
+	tl, _ := logger.InitLog("Debug")
+
+	tp := &TestParams{
+		TestLogger:     tl,
+		TestPrefixAddr: "http://localhost:8080",
 	}
+	return tp
+}
 
-	storage := storage.InitStorage(map[string]string{}, &fs, myLogger)
+func TestSaveURLHandler(t *testing.T) {
 
-	globalURL := "http://localhost:8080"
+	paramTest := getParamsForTest()
 
 	type want struct {
 		contentType string
@@ -36,21 +50,15 @@ func TestSaveURLHandler(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		request    string
 		body       string
 		methodType string
-
-		storage Repository
-
-		want want
+		want       want
 	}{
 		// TODO: Add test cases.
 		{
 			name:       "First success save originalUrl",
-			request:    "/",
 			methodType: http.MethodPost,
 			body:       "https://practicum.yandex.ru/",
-			storage:    storage,
 			want: want{
 				contentType: "plain/text",
 				statusCode:  201,
@@ -58,38 +66,26 @@ func TestSaveURLHandler(t *testing.T) {
 		},
 		{
 			name:       "No success save originalUrl",
-			request:    "/",
 			methodType: http.MethodGet,
 			body:       "https://practicum.yandex.ru/123",
-			storage:    storage,
 			want: want{
 				statusCode: 400,
 			},
 		},
-		// {
-		// 	name:       "Second success save originalUrl with compress",
-		// 	request:    "/",
-		// 	methodType: http.MethodPost,
-		// 	body:       "https://practicum.yandex.ru/123",
-		// 	storage:    storage,
-		// 	want: want{
-		// 		contentType: "plain/text",
-		// 		statusCode:  201,
-		// 	},
-		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mdb := mocks.NewMockDB(ctrl)
+			mdb := mocks.NewMockRepository(ctrl)
+			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
+
 			body := strings.NewReader(tt.body)
-			myLogger, err := logger.InitLog("Debug")
-			require.NoError(t, err)
-			request := httptest.NewRequest(tt.methodType, tt.request, body)
+
+			request := httptest.NewRequest(tt.methodType, "/", body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(tt.storage, globalURL, myLogger, mdb)
+			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
 			h := ht.SaveURLHandler
 
 			h(w, request)
@@ -111,14 +107,7 @@ func TestSaveURLHandler(t *testing.T) {
 }
 
 func TestGetURLHandler(t *testing.T) {
-	myLogger, _ := logger.InitLog("Debug")
-	fs := storage.FileStorage{
-		FileName: "",
-	}
-	storage := storage.InitStorage(map[string]string{
-		"https://google.com/": "82643f4619"}, &fs, myLogger)
-
-	globalURL := "http://localhost:8080"
+	paramTest := getParamsForTest()
 	type want struct {
 		statusCode int
 		Location   string
@@ -129,16 +118,13 @@ func TestGetURLHandler(t *testing.T) {
 		request    string
 		body       string
 		methodType string
-		storage    Repository
-
-		want want
+		want       want
 	}{
 		// TODO: Add test cases.
 		{
 			name:       "Success get originalUrl",
 			request:    "/82643f4619",
 			methodType: http.MethodGet,
-			storage:    storage,
 			want: want{
 				statusCode: 307,
 				Location:   "https://google.com/",
@@ -148,7 +134,6 @@ func TestGetURLHandler(t *testing.T) {
 			name:       "No success get originalUrl",
 			request:    "/82643f4610",
 			methodType: http.MethodGet,
-			storage:    storage,
 			want: want{
 				statusCode: 400,
 			},
@@ -159,18 +144,19 @@ func TestGetURLHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mdb := mocks.NewMockDB(ctrl)
-			myLogger, err := logger.InitLog("Debug")
-			require.NoError(t, err)
+			mdb := mocks.NewMockRepository(ctrl)
+			mdb.EXPECT().GetOriginalURLFromStorage(gomock.Any(), "82643f4619").Return("https://google.com/", nil).AnyTimes()
+			mdb.EXPECT().GetOriginalURLFromStorage(gomock.Any(), "82643f4610").Return("", errors.New("1")).AnyTimes()
+
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(tt.storage, globalURL, myLogger, mdb)
+			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
 			h := ht.GetURLHandler
 
 			h(w, request)
 			result := w.Result()
-			err = result.Body.Close()
+			err := result.Body.Close()
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 
@@ -182,13 +168,7 @@ func TestGetURLHandler(t *testing.T) {
 }
 
 func TestSaveURLJSONHandler(t *testing.T) {
-	myLogger, _ := logger.InitLog("Debug")
-	fs := storage.FileStorage{
-		FileName: "",
-	}
-	storage := storage.InitStorage(map[string]string{}, &fs, myLogger)
-
-	globalURL := "http://localhost:8080"
+	paramTest := getParamsForTest()
 
 	type want struct {
 		contentType string
@@ -201,8 +181,8 @@ func TestSaveURLJSONHandler(t *testing.T) {
 		body        string
 		methodType  string
 		contentType string
-		storage     Repository
-		want        want
+
+		want want
 	}{
 		{
 			// TODO: Add test cases.
@@ -211,7 +191,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			methodType:  http.MethodPost,
 			body:        `{"url":"123"}`,
 			contentType: "application/json",
-			storage:     storage,
+
 			want: want{
 				contentType: "application/json",
 				statusCode:  201,
@@ -224,7 +204,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			methodType:  http.MethodPost,
 			body:        `{"url":"123"}`,
 			contentType: "text/plain",
-			storage:     storage,
+
 			want: want{
 				contentType: "application/json",
 				statusCode:  400,
@@ -236,14 +216,14 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mdb := mocks.NewMockDB(ctrl)
-
+			mdb := mocks.NewMockRepository(ctrl)
+			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
 			body := strings.NewReader(tt.body)
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(tt.storage, globalURL, myLogger, mdb)
+			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
 			h := ht.SaveURLJSONHandler
 
 			h(w, request)
@@ -271,12 +251,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 }
 
 func TestAPIHandler_PingDBHandler(t *testing.T) {
-	type fields struct {
-		storage   Repository
-		globalURL string
-		MyLogger  *zap.Logger
-		MyDB      db.DB
-	}
+	paramTest := getParamsForTest()
 
 	type want struct {
 		statusCode int
@@ -289,7 +264,6 @@ func TestAPIHandler_PingDBHandler(t *testing.T) {
 		methodType  string
 		contentType string
 		success     bool
-		fields      fields
 		want        want
 	}{
 		// TODO: Add test cases.
@@ -321,26 +295,19 @@ func TestAPIHandler_PingDBHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mdb := mocks.NewMockDB(ctrl)
+			mdb := mocks.NewMockRepository(ctrl)
 
 			if tt.success {
-				mdb.EXPECT().Ping().Return(nil)
+				mdb.EXPECT().Ping().Return(nil).AnyTimes()
 			} else {
-				mdb.EXPECT().Ping().Return(errors.New("test"))
+				mdb.EXPECT().Ping().Return(errors.New("test")).AnyTimes()
 			}
 
 			request := httptest.NewRequest(tt.methodType, tt.request, nil)
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
 
-			ht := &APIHandler{
-				storage:   tt.fields.storage,
-				globalURL: tt.fields.globalURL,
-				MyLogger:  tt.fields.MyLogger,
-				MyDB:      mdb,
-			}
-
-			ht.MyLogger, _ = logger.InitLog("Debug")
+			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
 			h := ht.PingDBHandler
 
 			h(w, request)
