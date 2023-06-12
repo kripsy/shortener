@@ -4,3 +4,5 @@ R sslmode=disable port=5432"
 
 run with fils
 go run ./cmd/shortener/main.go -l "Debug" -f "./test.json"
+
+host=localhost user=urls password=jf6y5SfnxsuR sslmode=disable port=5432
