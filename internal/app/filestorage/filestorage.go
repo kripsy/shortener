@@ -190,7 +190,7 @@ func (fs *FileStorage) Ping() error {
 }
 
 func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
-	fs.myLogger.Error("Start CreateOrGetBatchFromStorage")
+	fs.myLogger.Debug("Start CreateOrGetBatchFromStorage")
 	for k, v := range *batchURL {
 		shortURL, err := fs.CreateOrGetFromStorage(context.Background(), v.OriginalURL)
 		if err != nil {

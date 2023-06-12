@@ -89,5 +89,14 @@ func (m InMemoryStorage) Ping() error {
 }
 
 func (m InMemoryStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
-	return nil, nil
+	m.myLogger.Debug("Start CreateOrGetBatchFromStorage")
+	for k, v := range *batchURL {
+		shortURL, err := m.CreateOrGetFromStorage(context.Background(), v.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
+		(*batchURL)[k].ShortURL = shortURL
+		(*batchURL)[k].OriginalURL = ""
+	}
+	return batchURL, nil
 }
