@@ -149,3 +149,8 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 
 	return shortURL, nil
 }
+
+func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
+
+	return nil, nil
+}

@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	models "github.com/kripsy/shortener/internal/app/models"
 )
 
 // MockRepository is a mock of Repository interface.
@@ -44,6 +45,21 @@ func (m *MockRepository) Close() {
 func (mr *MockRepositoryMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockRepository)(nil).Close))
+}
+
+// CreateOrGetBatchFromStorage mocks base method.
+func (m *MockRepository) CreateOrGetBatchFromStorage(arg0 context.Context, arg1 *models.BatchURL) (*models.BatchURL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrGetBatchFromStorage", arg0, arg1)
+	ret0, _ := ret[0].(*models.BatchURL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrGetBatchFromStorage indicates an expected call of CreateOrGetBatchFromStorage.
+func (mr *MockRepositoryMockRecorder) CreateOrGetBatchFromStorage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrGetBatchFromStorage", reflect.TypeOf((*MockRepository)(nil).CreateOrGetBatchFromStorage), arg0, arg1)
 }
 
 // CreateOrGetFromStorage mocks base method.

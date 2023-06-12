@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,12 +11,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"go.uber.org/zap"
-
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/mocks"
+	"github.com/kripsy/shortener/internal/app/models"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // t.Setenv("SERVER_ADDRESS", "localhost:8080")
@@ -250,7 +252,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 	}
 }
 
-func TestAPIHandler_PingDBHandler(t *testing.T) {
+func TestPingDBHandler(t *testing.T) {
 	paramTest := getParamsForTest()
 
 	type want struct {
@@ -314,6 +316,99 @@ func TestAPIHandler_PingDBHandler(t *testing.T) {
 			result := w.Result()
 			require.Equal(t, tt.want.statusCode, result.StatusCode)
 			result.Body.Close()
+		})
+	}
+}
+
+func TestSaveBatchURLHandler(t *testing.T) {
+	paramTest := getParamsForTest()
+
+	type want struct {
+		contentType string
+		statusCode  int
+		body        string
+	}
+
+	tests := []struct {
+		name        string
+		request     string
+		body        string
+		methodType  string
+		contentType string
+		want        want
+	}{
+		// TODO: Add test cases.
+		{
+			// TODO: Add test cases.
+			name:       "First success save originalUrl",
+			request:    "/",
+			methodType: http.MethodPost,
+			body: `[
+				{
+					"correlation_id": "1",
+					"original_url":   "https://ya.ru"
+				},
+				{
+					"correlation_id": "2",
+					"original_url":   "https://google.com"
+				}
+			]`,
+			contentType: "application/json",
+
+			want: want{
+				contentType: "application/json",
+				statusCode:  201,
+				body: `[
+					{
+						"correlation_id": "1",
+						"short_url":   "ttttt"
+					},
+					{
+						"correlation_id": "2",
+						"short_url":   "fffff"
+					}
+				]`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mdb := mocks.NewMockRepository(ctrl)
+			var valueInut *models.BatchURL
+			var valueOutput *models.BatchURL
+			err := json.Unmarshal([]byte(tt.body), &valueInut)
+			assert.NoError(t, err)
+			err = json.Unmarshal([]byte(tt.want.body), &valueOutput)
+			assert.NoError(t, err)
+			fmt.Println(valueInut)
+			fmt.Println(valueOutput)
+
+			mdb.EXPECT().CreateOrGetBatchFromStorage(gomock.Any(), valueInut).Return(valueOutput, nil).AnyTimes()
+
+			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
+			assert.NoError(t, err)
+
+			request.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			h := ht.SaveBatchURLHandler
+
+			h(w, request)
+
+			result := w.Result()
+			defer result.Body.Close()
+
+			resp, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+			var respModel *models.BatchURL
+			err = json.Unmarshal(resp, &respModel)
+			assert.NoError(t, err)
+			assert.Equal(t, respModel, valueOutput)
 		})
 	}
 }

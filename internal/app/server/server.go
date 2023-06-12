@@ -33,6 +33,7 @@ func InitServer(URLRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 	m.Router.Post("/", ht.SaveURLHandler)
 	m.Router.Get("/{id}", ht.GetURLHandler)
 	m.Router.Post("/api/shorten", ht.SaveURLJSONHandler)
+	m.Router.Post("/api/shorten/batch", ht.SaveBatchURLHandler)
 	m.Router.Get("/ping", ht.PingDBHandler)
 
 	return m, nil

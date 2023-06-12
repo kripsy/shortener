@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
@@ -85,4 +86,8 @@ func (m InMemoryStorage) Close() {
 
 func (m InMemoryStorage) Ping() error {
 	return nil
+}
+
+func (m InMemoryStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
+	return nil, nil
 }
