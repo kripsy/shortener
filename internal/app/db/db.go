@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -152,5 +153,52 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 
 func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
 
-	return nil, nil
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	defer tx.Rollback()
+	query := `INSERT INTO public.urls(id, original_url, short_url) VALUES ($1, $2, $3);`
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		mdb.myLogger.Debug("Failed to PrepareContext in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	defer stmt.Close()
+
+	for k, v := range *batchURL {
+		fmt.Println(v.OriginalURL)
+		shortURL, err := mdb.isOriginalURLExist(ctx, v.OriginalURL)
+
+		if err != nil {
+			mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
+		}
+		if shortURL != "" {
+			mdb.myLogger.Debug("URL is exist")
+			// return shortURL, nil
+			(*batchURL)[k].ShortURL = shortURL
+			(*batchURL)[k].OriginalURL = ""
+			continue
+		}
+		mdb.myLogger.Debug("URL not exists")
+
+		shortURL, err = utils.CreateShortURL()
+		if err != nil {
+			return nil, err
+		}
+
+		event := models.NewEvent(shortURL, v.OriginalURL)
+
+		_, err = stmt.ExecContext(ctx, event.UUID, event.OriginalURL, event.ShortURL)
+		if err != nil {
+			mdb.myLogger.Debug("Failed exec ExecContext in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+			return nil, err
+		}
+		(*batchURL)[k].OriginalURL = ""
+		(*batchURL)[k].ShortURL = shortURL
+	}
+	tx.Commit()
+	return batchURL, nil
 }
