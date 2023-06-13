@@ -74,6 +74,11 @@ func InitConfig() *Config {
 			*databaseDsn = "postgres://postgres@localhost:5432/praktikum?sslmode=disable"
 
 		}
+		if *databaseDsn == "postgres:5432/postgres?sslmode=disable" {
+			fmt.Println("change connstring")
+			*databaseDsn = "postgres://postgres@localhost:5432/postgres?sslmode=disable"
+
+		}
 		repositoryType = PostgresDB
 
 	case *fileStoragePath != "":

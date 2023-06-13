@@ -14,3 +14,6 @@ go test ./... -cover -v
 create mocks
 mockgen -destination=internal/app/mocks/mock_db.go -package=mocks github.com/kripsy/shortener/internal/app/handlers Repository
 
+
+
+ ~/go/src/self_dev/go-autotests/bin/shortenertest -test.v -test.run='^TestIteration12$' -binary-path=./cmd/shortener/shortener -source-path=./ --database-dsn='host=localhost user=postgres  sslmode=disable port=5432 '

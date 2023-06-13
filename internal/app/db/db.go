@@ -127,6 +127,7 @@ func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL st
 		return "", err
 	}
 
+	mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL))
 	return originalURL, nil
 }
 
@@ -152,7 +153,7 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 }
 
 func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
-
+	mdb.myLogger.Debug("Start CreateOrGetBatchFromStorage", zap.Any("msg", *(batchURL)))
 	tx, err := mdb.DB.Begin()
 	if err != nil {
 		mdb.myLogger.Debug("Failed to Begin Tx in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))

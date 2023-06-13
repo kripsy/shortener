@@ -211,6 +211,10 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
+	// important!!! short url must include server address. It's easy, but in 12 increment i forgot about it
+	for k, _ := range *val {
+		(*val)[k].ShortURL = utils.ReturnURL((*val)[k].ShortURL, h.globalURL)
+	}
 
 	h.myLogger.Debug("Result CreateOrGetBatchFromStorage", zap.Any("msg", val))
 
