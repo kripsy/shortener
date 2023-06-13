@@ -1,0 +1,32 @@
+version: '3.7'
+
+services:
+  postgres_db:
+    image: postgres:13.4
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=jf6y5SfnxsuR
+      - POSTGRES_USER=urls
+      - POSTGRES_DB=urls
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  
+  postgres_db2:
+    image: postgres:13.4
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=praktikum
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data2:/var/lib/postgresql/data
+ 
+volumes:
+  pg_data: {}
+  pg_data2: {}
