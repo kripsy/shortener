@@ -53,7 +53,7 @@ func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) er
 
 	query := `-- Table: public.urls
 
-	DROP TABLE IF EXISTS public.urls;
+	--DROP TABLE IF EXISTS public.urls;
 	
 	CREATE TABLE IF NOT EXISTS public.urls
 	(
