@@ -212,7 +212,7 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	// important!!! short url must include server address. It's easy, but in 12 increment i forgot about it
-	for k, _ := range *val {
+	for k := range *val {
 		(*val)[k].ShortURL = utils.ReturnURL((*val)[k].ShortURL, h.globalURL)
 	}
 

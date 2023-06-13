@@ -6,7 +6,7 @@ type Event struct {
 	UUID          int    `json:"uuid,omitempty"`
 	ShortURL      string `json:"short_url,omitempty"`
 	OriginalURL   string `json:"original_url,omitempty"`
-	CorrelationId string `json:"correlation_id,omitempty"`
+	CorrelationID string `json:"correlation_id,omitempty"`
 }
 
 type BatchURL []Event
