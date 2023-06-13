@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -60,14 +61,24 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
+	isUniqueError := false
 	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body))
 	if err != nil {
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		var ue *models.UniqueError
+		if errors.As(err, &ue) {
+			isUniqueError = true
+		} else {
+			h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
 	}
-
 	w.Header().Set("Content-Type", "plain/text")
-	w.WriteHeader(http.StatusCreated)
+	if isUniqueError {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+	}
 	io.WriteString(w, utils.ReturnURL(val, h.globalURL))
 }
 
@@ -82,7 +93,7 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	url, err := h.repository.GetOriginalURLFromStorage(ctx, shortURL)
-
+	fmt.Println(url)
 	// if we got error in getFromStorage - bad request
 	if err != nil {
 
@@ -124,11 +135,17 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
 
+	isUniqueError := false
 	val, err := h.repository.CreateOrGetFromStorage(context.Background(), payload.URL)
 	if err != nil {
-		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
-		http.Error(w, "", http.StatusBadRequest)
-		return
+		var ue *models.UniqueError
+		if errors.As(err, &ue) {
+			isUniqueError = true
+		} else {
+			h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
 	}
 
 	resp, err := json.Marshal(URLResponseType{
@@ -140,10 +157,17 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	if isUniqueError {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+
+		w.WriteHeader(http.StatusCreated)
+
+	}
+
 	w.Write(resp)
+
 }
 
 /*

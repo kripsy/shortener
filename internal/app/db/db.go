@@ -3,9 +3,12 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
@@ -85,17 +88,17 @@ func (mdb PostgresDB) Close() {
 }
 
 func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
-	shortURL, err := mdb.isOriginalURLExist(ctx, url)
-	if err != nil {
-		mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
-	}
-	if shortURL != "" {
-		mdb.myLogger.Debug("URL is exist")
-		return shortURL, nil
-	}
-	mdb.myLogger.Debug("URL not exists")
+	// shortURL, err := mdb.isOriginalURLExist(ctx, url)
+	// if err != nil {
+	// 	mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
+	// }
+	// if shortURL != "" {
+	// 	mdb.myLogger.Debug("URL is exist")
+	// 	return shortURL, sql.
+	// }
+	// mdb.myLogger.Debug("URL not exists")
 
-	shortURL, err = utils.CreateShortURL()
+	shortURL, err := utils.CreateShortURL()
 	if err != nil {
 		return "", err
 	}
@@ -104,6 +107,16 @@ func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (s
 	VALUES ($1, $2, $3);`
 	_, err = mdb.DB.ExecContext(ctx, query, event.UUID, event.OriginalURL, event.ShortURL)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			uniqError := models.NewUniqueError("original_url", err)
+			mdb.myLogger.Debug("Failed exec CreateOrGetFromStorage UniqueViolation", zap.String("msg", err.Error()))
+			shortURL, err = mdb.isOriginalURLExist(ctx, url)
+			if err != nil {
+				return "", err
+			}
+			return shortURL, uniqError
+		}
 		mdb.myLogger.Debug("Failed exec CreateOrGetFromStorage", zap.String("msg", err.Error()))
 		return "", err
 	}
