@@ -53,7 +53,7 @@ func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) er
 
 	query := `-- Table: public.urls
 
-	-- DROP TABLE IF EXISTS public.urls;
+	DROP TABLE IF EXISTS public.urls;
 	
 	CREATE TABLE IF NOT EXISTS public.urls
 	(
@@ -66,7 +66,10 @@ func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) er
 	TABLESPACE pg_default;
 	
 	ALTER TABLE IF EXISTS public.urls
-		OWNER to postgres;`
+		OWNER to postgres;
+		ALTER TABLE public.urls
+ADD CONSTRAINT original_url_unq UNIQUE(original_url);
+		`
 
 	_, err := mdb.DB.ExecContext(ctx, query)
 
