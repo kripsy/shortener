@@ -1,3 +1,7 @@
+# TO DO
+1. change sql/database to pgxpool
+2. change insert via pgxtool
+
 # go-musthave-shortener-tpl
 
 Шаблон репозитория для трека «Сервис сокращения URL».
