@@ -63,8 +63,6 @@ func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) er
 		CONSTRAINT urls_pkey PRIMARY KEY (id)
 	)
 	
-	TABLESPACE pg_default;
-	
 	ALTER TABLE IF EXISTS public.urls
 		OWNER to postgres;
 		ALTER TABLE public.urls
