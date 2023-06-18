@@ -50,7 +50,13 @@ func InitDB(connString string, myLogger *zap.Logger) (*PostgresDB, error) {
 }
 
 func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) error {
-
+	mdb.myLogger.Debug("Start CreateTables")
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return err
+	}
+	defer tx.Rollback()
 	query := `-- Table: public.urls
 
 	--DROP TABLE IF EXISTS public.urls;
@@ -61,21 +67,27 @@ func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) er
 		original_url text COLLATE pg_catalog."default" NOT NULL,
 		short_url text COLLATE pg_catalog."default" NOT NULL,
 		CONSTRAINT urls_pkey PRIMARY KEY (id)
-	)
+	);
 	
 	ALTER TABLE IF EXISTS public.urls
-		OWNER to postgres;
-		ALTER TABLE public.urls
-ADD CONSTRAINT original_url_unq UNIQUE(original_url);
+		OWNER to postgres; 
+
+	ALTER TABLE public.urls ADD CONSTRAINT original_url_unq UNIQUE(original_url);
+
+	--creating index for text search via short url
+	CREATE INDEX urls_short_url_key ON public.urls USING HASH (short_url);
+	
+	--creating index for text search via original url
+	CREATE INDEX urls_original_url_key ON public.urls USING HASH (original_url);
 		`
 
-	_, err := mdb.DB.ExecContext(ctx, query)
+	_, err = mdb.DB.ExecContext(ctx, query)
 
 	if err != nil {
 		myLogger.Debug("Fail to create table", zap.String("msg", err.Error()))
 		return err
 	}
-
+	tx.Commit()
 	return nil
 }
 
