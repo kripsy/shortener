@@ -65,13 +65,13 @@ func RunMigrations(ctx context.Context, connString string, myLogger *zap.Logger)
 	fmt.Println(connString)
 	m, err := migrate.New(fmt.Sprintf("file://%s", migrationsPath), connString)
 	if err != nil {
-		return fmt.Errorf("Failed to get new migrate instance: %w", err)
+		return fmt.Errorf("failed to get new migrate instance: %w", err)
 	}
 	fmt.Println("success")
 
 	if err = m.Up(); err != nil {
 		if !errors.Is(err, migrate.ErrNoChange) {
-			return fmt.Errorf("Failed to apply migrations to DB: %w", err)
+			return fmt.Errorf("failed to apply migrations to DB: %w", err)
 		}
 	}
 	return nil
