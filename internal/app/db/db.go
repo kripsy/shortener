@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -29,6 +33,12 @@ var _ DB = &PostgresDB{}
 
 func InitDB(connString string, myLogger *zap.Logger) (*PostgresDB, error) {
 
+	err := RunMigrations(context.Background(), connString, myLogger)
+	if err != nil {
+		myLogger.Debug("Fail to run migrations", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
 	db, err := sql.Open("pgx", connString)
 
 	if err != nil {
@@ -47,6 +57,24 @@ func InitDB(connString string, myLogger *zap.Logger) (*PostgresDB, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func RunMigrations(ctx context.Context, connString string, myLogger *zap.Logger) error {
+	const migrationsPath = "./db/migrations"
+	fmt.Println(migrationsPath)
+	fmt.Println(connString)
+	m, err := migrate.New(fmt.Sprintf("file://%s", migrationsPath), connString)
+	if err != nil {
+		return fmt.Errorf("Failed to get new migrate instance: %w", err)
+	}
+	fmt.Println("success")
+
+	if err = m.Up(); err != nil {
+		if !errors.Is(err, migrate.ErrNoChange) {
+			return fmt.Errorf("Failed to apply migrations to DB: %w", err)
+		}
+	}
+	return nil
 }
 
 func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) error {

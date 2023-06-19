@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/kripsy/shortener/internal/app/config"
 	"github.com/kripsy/shortener/internal/app/db"
@@ -56,9 +55,9 @@ func NewApp(ctx context.Context) (*App, error) {
 			myLogger.Debug("Failed init DB", zap.String("msg", err.Error()))
 			return nil, err
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-		db.CreateTables(ctx, myLogger)
+		// ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		// defer cancel()
+		// db.CreateTables(ctx, myLogger)
 		repo = db
 
 	case config.FileStorage:
