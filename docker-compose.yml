@@ -66,7 +66,7 @@ services:
         "-dir", "/migrations",
         "-ext", ".sql",
         "-seq", "-digits", "5",
-        "init"
+        "add_users"
       ]
     volumes:
       - ./db/migrations:/migrations

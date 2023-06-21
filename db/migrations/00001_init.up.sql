@@ -9,9 +9,6 @@ BEGIN TRANSACTION ;
 		CONSTRAINT urls_pkey PRIMARY KEY (id)
 	);
 	
-	-- ALTER TABLE IF EXISTS public.urls
-	-- 	OWNER to postgres; 
-
 	ALTER TABLE public.urls ADD CONSTRAINT original_url_unq UNIQUE(original_url);
 
 	--creating index for text search via short url
