@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
@@ -205,4 +206,9 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 	}
 	tx.Commit()
 	return batchURL, nil
+}
+
+func (mdb PostgresDB) GetUserByID(ctx context.Context, ID uint64) (*auth.User, error) {
+
+	return nil, fmt.Errorf("not implemented")
 }

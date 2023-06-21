@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
@@ -200,4 +201,9 @@ func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL
 		(*batchURL)[k].OriginalURL = ""
 	}
 	return batchURL, nil
+}
+
+func (fs *FileStorage) GetUserByID(ctx context.Context, ID uint64) (*auth.User, error) {
+
+	return nil, fmt.Errorf("not implemented")
 }

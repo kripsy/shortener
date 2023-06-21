@@ -10,6 +10,7 @@ import (
 
 	"net/http"
 
+	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
@@ -20,6 +21,7 @@ type Repository interface {
 	GetOriginalURLFromStorage(ctx context.Context, url string) (string, error)
 	CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error)
 
+	GetUserByID(ctx context.Context, ID uint64) (*auth.User, error)
 	Close()
 	Ping() error
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
@@ -13,18 +14,6 @@ type InMemoryStorage struct {
 	storage  map[string]string
 	myLogger *zap.Logger
 }
-
-// func InitStorageFromFile(storage map[string]string, fs *FileStorage, myLogger *zap.Logger) error {
-// 	events, err := readURL(fs.FileName, myLogger)
-// 	if err != nil {
-// 		myLogger.Warn("error read URLs")
-// 		return err
-// 	}
-// 	for _, v := range events {
-// 		storage[v.OriginalURL] = v.ShortURL
-// 	}
-// 	return nil
-// }
 
 func InitInMemoryStorage(initValue map[string]string, myLogger *zap.Logger) (*InMemoryStorage, error) {
 	m := &InMemoryStorage{
@@ -44,16 +33,6 @@ func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string
 			return "", err
 		}
 		m.storage[url] = val
-
-		// e := make([]models.Event, 0)
-
-		// if ne := models.NewEvent(val, url); ne != nil {
-		// 	e = append(e, *ne)
-		// }
-
-		// if len(e) > 0 {
-		// 	addURL(e, m.fileStorageName, m.MyLogger)
-		// }
 
 		return val, nil
 	}
@@ -99,4 +78,8 @@ func (m InMemoryStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchU
 		(*batchURL)[k].OriginalURL = ""
 	}
 	return batchURL, nil
+}
+
+func (m InMemoryStorage) GetUserByID(ctx context.Context, ID uint64) (*auth.User, error) {
+	return nil, fmt.Errorf("not implemented")
 }
