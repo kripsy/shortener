@@ -1,0 +1,76 @@
+version: '3.7'
+
+services:
+  postgres_db:
+    image: postgres:13.4
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=jf6y5SfnxsuR
+      - POSTGRES_USER=urls
+      - POSTGRES_DB=urls
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  
+
+  migration_db_up:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "-path", "/migrations",
+        "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
+        "up"
+        ]
+    volumes:
+      - ./db/migrations:/migrations
+    depends_on:
+      - postgres_db
+  
+
+  migration_db_down:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "-path", "/migrations",
+        "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
+        "down", "-all",
+        ]
+    volumes:
+      - ./db/migrations:/migrations
+    depends_on:
+      - postgres_db
+    
+
+  migration_db_force:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "-path", "/migrations",
+        "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
+        "force", "1"
+        ]
+    volumes:
+      - ./db/migrations:/migrations
+    depends_on:
+      - postgres_db
+
+
+
+  migration_db_add:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "create",
+        "-dir", "/migrations",
+        "-ext", ".sql",
+        "-seq", "-digits", "5",
+        "init"
+      ]
+    volumes:
+      - ./db/migrations:/migrations
+
+volumes:
+  pg_data: {}
+  pg_data2: {}
