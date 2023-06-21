@@ -77,48 +77,6 @@ func RunMigrations(ctx context.Context, connString string, myLogger *zap.Logger)
 	return nil
 }
 
-func (mdb PostgresDB) CreateTables(ctx context.Context, myLogger *zap.Logger) error {
-	mdb.myLogger.Debug("Start CreateTables")
-	tx, err := mdb.DB.Begin()
-	if err != nil {
-		mdb.myLogger.Debug("Failed to Begin Tx in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
-		return err
-	}
-	defer tx.Rollback()
-	query := `-- Table: public.urls
-
-	--DROP TABLE IF EXISTS public.urls;
-	
-	CREATE TABLE IF NOT EXISTS public.urls
-	(
-		id bigint NOT NULL,
-		original_url text COLLATE pg_catalog."default" NOT NULL,
-		short_url text COLLATE pg_catalog."default" NOT NULL,
-		CONSTRAINT urls_pkey PRIMARY KEY (id)
-	);
-	
-	ALTER TABLE IF EXISTS public.urls
-		OWNER to postgres; 
-
-	ALTER TABLE public.urls ADD CONSTRAINT original_url_unq UNIQUE(original_url);
-
-	--creating index for text search via short url
-	CREATE INDEX urls_short_url_key ON public.urls USING HASH (short_url);
-	
-	--creating index for text search via original url
-	CREATE INDEX urls_original_url_key ON public.urls USING HASH (original_url);
-		`
-
-	_, err = mdb.DB.ExecContext(ctx, query)
-
-	if err != nil {
-		myLogger.Debug("Fail to create table", zap.String("msg", err.Error()))
-		return err
-	}
-	tx.Commit()
-	return nil
-}
-
 func (mdb PostgresDB) Ping() error {
 	err := mdb.DB.Ping()
 	return err
@@ -129,15 +87,6 @@ func (mdb PostgresDB) Close() {
 }
 
 func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
-	// shortURL, err := mdb.isOriginalURLExist(ctx, url)
-	// if err != nil {
-	// 	mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
-	// }
-	// if shortURL != "" {
-	// 	mdb.myLogger.Debug("URL is exist")
-	// 	return shortURL, sql.
-	// }
-	// mdb.myLogger.Debug("URL not exists")
 
 	shortURL, err := utils.CreateShortURL()
 	if err != nil {

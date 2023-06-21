@@ -69,7 +69,7 @@ go run ./cmd/shortener/main.go -l "Debug" -d "host=localhost user=urls password=
 R sslmode=disable port=5432"
 ```
 
-Пример запуска локальных тестов
+Пример запуска тестов локально
 ```
 go test ./... -cover -v
 ```
