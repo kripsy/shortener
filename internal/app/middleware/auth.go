@@ -105,7 +105,7 @@ func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) erro
 		Value:   token,
 		Expires: expTime,
 	}
-
+	w.Header().Add("Authorization", "Bearer "+token)
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)
 	return nil
