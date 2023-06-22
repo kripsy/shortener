@@ -12,19 +12,19 @@ type Claims struct {
 	UserID int
 }
 
-const SECRET_KEY = "supersecretkey"
-const TOKEN_EXP = time.Hour * 3
+const secretKey = "supersecretkey"
+const tokenExp = time.Hour * 3
 
 func BuildJWTString(userID int) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		UserID: userID,
 	})
 
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", errors.Wrap(err, "failed in BuildJWTString: %w")
 	}
@@ -34,7 +34,7 @@ func BuildJWTString(userID int) (string, error) {
 func GetUserID(tokenString string) (int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return 0, err
@@ -50,7 +50,7 @@ func GetUserID(tokenString string) (int, error) {
 func GetExpires(tokenString string) (time.Time, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return time.Time{}, err
@@ -66,7 +66,7 @@ func GetExpires(tokenString string) (time.Time, error) {
 func IsTokenValid(tokenString string) (bool, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(SECRET_KEY), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return false, err
