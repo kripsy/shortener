@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/utils"
@@ -20,33 +23,88 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 			"/api/user/urls",
 		}
 		m.MyLogger.Debug("Start JWTMiddleware")
+
+		// check if current URL is protected
 		isURLProtected := utils.StingContains(protectedURL, r.URL.Path)
 		m.MyLogger.Debug("URL protected value", zap.Bool("msg", isURLProtected))
-		// generate new token
-		token, err := auth.BuildJWTString()
+
+		// get jwt token from cookie
+		cookie, err := r.Cookie("token")
 		if err != nil {
-			m.MyLogger.Debug("Error JWTMiddleware", zap.String("msg", err.Error()))
+			// return if error to get cookie
+			if !errors.Is(err, http.ErrNoCookie) {
+				m.MyLogger.Debug("Error get Cookie", zap.String("msg", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if isURLProtected {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			m.MyLogger.Debug("No Cookie")
+			m.setNewCookie(w)
+			next.ServeHTTP(w, r)
+			return
 		}
 
-		m.MyLogger.Debug("Token was generated", zap.String("msg", token))
-		// get expired time token for set in cookie
-		expTime, err := auth.GetExpires(token)
+		// continue if cookie empty
+		tokenString := cookie.Value
+		m.MyLogger.Debug("Current Cookie", zap.String("msg", tokenString))
+
+		tokenIsValid, _ := auth.IsTokenValid(tokenString)
+		m.MyLogger.Debug("Current token is valid?", zap.Bool("msg", tokenIsValid))
+
+		if !tokenIsValid {
+			err = m.setNewCookie(w)
+			if err != nil {
+				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		_, err = auth.GetUserID(tokenString)
 		if err != nil {
-			m.MyLogger.Debug("Error JWTMiddleware", zap.String("msg", err.Error()))
+			m.MyLogger.Debug("Error get user ID from token", zap.String("msg", err.Error()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
-
-		// generate cookie
-		cookie := &http.Cookie{
-			Name:     "jwtString",
-			Value:    token,
-			Secure:   true,
-			Expires:  expTime,
-			SameSite: http.SameSiteDefaultMode,
-		}
-
-		// set cookie
-		http.SetCookie(w, cookie)
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (m *MyMiddleware) setNewCookie(w http.ResponseWriter) error {
+	// generate new token
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	newUser, err := m.repo.RegisterUser(ctx)
+	if err != nil {
+		return err
+	}
+	m.MyLogger.Debug("Created new User", zap.Any("User:", newUser))
+	token, err := auth.BuildJWTString(newUser.ID)
+	if err != nil {
+		m.MyLogger.Debug("Error JWTMiddleware", zap.String("msg", err.Error()))
+		return err
+	}
+
+	m.MyLogger.Debug("Token was generated", zap.String("msg", token))
+	// get expired time token for set in cookie
+	expTime, err := auth.GetExpires(token)
+	if err != nil {
+		m.MyLogger.Debug("Error JWTMiddleware", zap.String("msg", err.Error()))
+		return err
+	}
+
+	// generate cookie
+	cookie := &http.Cookie{
+		Name:    "token",
+		Value:   token,
+		Expires: expTime,
+	}
+
+	http.SetCookie(w, cookie)
+	return nil
 }

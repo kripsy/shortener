@@ -6,12 +6,12 @@ BEGIN TRANSACTION ;
     */
 	CREATE TABLE IF NOT EXISTS users
 	(
-		id bigserial NOT NULL,
+		id bigint NOT NULL,
 		CONSTRAINT users_pkey PRIMARY KEY (id)
 	);
 
     ALTER TABLE urls
-    ADD COLUMN user_id bigserial
+    ADD COLUMN user_id bigint
     REFERENCES users(id);
 
 COMMIT ;

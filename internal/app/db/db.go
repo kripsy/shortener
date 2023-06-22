@@ -10,11 +10,11 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/google/uuid"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
@@ -87,13 +87,13 @@ func (mdb PostgresDB) Close() {
 	mdb.DB.Close()
 }
 
-func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
+func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
 
 	shortURL, err := utils.CreateShortURL()
 	if err != nil {
 		return "", err
 	}
-	event := models.NewEvent(shortURL, url)
+	event := models.NewEvent(shortURL, url, 1)
 	query := `INSERT INTO public.urls(id, original_url, short_url)
 	VALUES ($1, $2, $3);`
 	_, err = mdb.DB.ExecContext(ctx, query, event.UUID, event.OriginalURL, event.ShortURL)
@@ -156,7 +156,7 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 	return shortURL, nil
 }
 
-func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
+func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error) {
 	mdb.myLogger.Debug("Start CreateOrGetBatchFromStorage", zap.Any("msg", *(batchURL)))
 	tx, err := mdb.DB.Begin()
 	if err != nil {
@@ -194,7 +194,7 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 			return nil, err
 		}
 
-		event := models.NewEvent(shortURL, v.OriginalURL)
+		event := models.NewEvent(shortURL, v.OriginalURL, 1)
 
 		_, err = stmt.ExecContext(ctx, event.UUID, event.OriginalURL, event.ShortURL)
 		if err != nil {
@@ -208,7 +208,14 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 	return batchURL, nil
 }
 
-func (mdb PostgresDB) GetUserByID(ctx context.Context, ID uint64) (*auth.User, error) {
+func (mdb PostgresDB) GetUserByID(ctx context.Context, ID int) (*models.User, error) {
 
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (mdb PostgresDB) RegisterUser(ctx context.Context) (*models.User, error) {
+
+	return &models.User{
+		ID: int(uuid.New().ID()),
+	}, nil
 }

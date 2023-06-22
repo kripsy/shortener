@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kripsy/shortener/internal/app/auth"
+	"github.com/google/uuid"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
@@ -111,7 +111,7 @@ func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
-func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
+func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
 
 	for originalURL, shortURL := range fs.memoryStorage {
 		if originalURL == url {
@@ -123,7 +123,7 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string) (
 	if err != nil {
 		return "", err
 	}
-	event := models.NewEvent(shortURL, url)
+	event := models.NewEvent(shortURL, url, 1)
 	Producer, err := NewProducer(fs.fileName, fs.myLogger)
 	if err != nil {
 		fs.myLogger.Error("cannot create producer")
@@ -190,10 +190,10 @@ func (fs *FileStorage) Ping() error {
 	return nil
 }
 
-func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
+func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error) {
 	fs.myLogger.Debug("Start CreateOrGetBatchFromStorage")
 	for k, v := range *batchURL {
-		shortURL, err := fs.CreateOrGetFromStorage(context.Background(), v.OriginalURL)
+		shortURL, err := fs.CreateOrGetFromStorage(context.Background(), v.OriginalURL, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +203,24 @@ func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL
 	return batchURL, nil
 }
 
-func (fs *FileStorage) GetUserByID(ctx context.Context, ID uint64) (*auth.User, error) {
+func (fs *FileStorage) GetUserByID(ctx context.Context, ID int) (*models.User, error) {
+	events, err := fs.readEventsFromFile()
+	if err != nil {
+		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	for _, v := range events {
+		if v.UserID == ID {
+			return &models.User{
+				ID: v.UserID,
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
 
-	return nil, fmt.Errorf("not implemented")
+func (fs *FileStorage) RegisterUser(ctx context.Context) (*models.User, error) {
+	return &models.User{
+		ID: int(uuid.New().ID()),
+	}, nil
 }

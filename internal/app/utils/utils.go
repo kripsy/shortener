@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// func for generation random short URL, consist of 5 bytes
 func CreateShortURL() (string, error) {
 	// create slice 5 bytes
 	buf := make([]byte, 5)
@@ -21,10 +22,12 @@ func CreateShortURL() (string, error) {
 	return fmt.Sprintf("%x", buf), nil
 }
 
+// concatination global URL (address server) and endpoint (short URL)
 func ReturnURL(endpoint, globalURL string) string {
 	return globalURL + "/" + endpoint
 }
 
+// function for check is searchString contain in arrayString
 func StingContains(arrayString []string, searchString string) bool {
 	for _, v := range arrayString {
 		if v == searchString {

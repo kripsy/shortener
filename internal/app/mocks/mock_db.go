@@ -48,33 +48,33 @@ func (mr *MockRepositoryMockRecorder) Close() *gomock.Call {
 }
 
 // CreateOrGetBatchFromStorage mocks base method.
-func (m *MockRepository) CreateOrGetBatchFromStorage(arg0 context.Context, arg1 *models.BatchURL) (*models.BatchURL, error) {
+func (m *MockRepository) CreateOrGetBatchFromStorage(arg0 context.Context, arg1 *models.BatchURL, arg2 int) (*models.BatchURL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrGetBatchFromStorage", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateOrGetBatchFromStorage", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*models.BatchURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateOrGetBatchFromStorage indicates an expected call of CreateOrGetBatchFromStorage.
-func (mr *MockRepositoryMockRecorder) CreateOrGetBatchFromStorage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreateOrGetBatchFromStorage(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrGetBatchFromStorage", reflect.TypeOf((*MockRepository)(nil).CreateOrGetBatchFromStorage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrGetBatchFromStorage", reflect.TypeOf((*MockRepository)(nil).CreateOrGetBatchFromStorage), arg0, arg1, arg2)
 }
 
 // CreateOrGetFromStorage mocks base method.
-func (m *MockRepository) CreateOrGetFromStorage(arg0 context.Context, arg1 string) (string, error) {
+func (m *MockRepository) CreateOrGetFromStorage(arg0 context.Context, arg1 string, arg2 int) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrGetFromStorage", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreateOrGetFromStorage", arg0, arg1, arg2)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateOrGetFromStorage indicates an expected call of CreateOrGetFromStorage.
-func (mr *MockRepositoryMockRecorder) CreateOrGetFromStorage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CreateOrGetFromStorage(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrGetFromStorage", reflect.TypeOf((*MockRepository)(nil).CreateOrGetFromStorage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrGetFromStorage", reflect.TypeOf((*MockRepository)(nil).CreateOrGetFromStorage), arg0, arg1, arg2)
 }
 
 // GetOriginalURLFromStorage mocks base method.
@@ -92,6 +92,21 @@ func (mr *MockRepositoryMockRecorder) GetOriginalURLFromStorage(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalURLFromStorage", reflect.TypeOf((*MockRepository)(nil).GetOriginalURLFromStorage), arg0, arg1)
 }
 
+// GetUserByID mocks base method.
+func (m *MockRepository) GetUserByID(arg0 context.Context, arg1 int) (*models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByID", arg0, arg1)
+	ret0, _ := ret[0].(*models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByID indicates an expected call of GetUserByID.
+func (mr *MockRepositoryMockRecorder) GetUserByID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockRepository)(nil).GetUserByID), arg0, arg1)
+}
+
 // Ping mocks base method.
 func (m *MockRepository) Ping() error {
 	m.ctrl.T.Helper()
@@ -104,4 +119,19 @@ func (m *MockRepository) Ping() error {
 func (mr *MockRepositoryMockRecorder) Ping() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping))
+}
+
+// RegisterUser mocks base method.
+func (m *MockRepository) RegisterUser(arg0 context.Context) (*models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterUser", arg0)
+	ret0, _ := ret[0].(*models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterUser indicates an expected call of RegisterUser.
+func (mr *MockRepositoryMockRecorder) RegisterUser(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterUser", reflect.TypeOf((*MockRepository)(nil).RegisterUser), arg0)
 }
