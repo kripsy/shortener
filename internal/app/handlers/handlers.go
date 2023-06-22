@@ -66,18 +66,18 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	isUniqueError := false
 	token, err := r.Cookie("token")
+	var userID int
 	if err != nil {
 		h.myLogger.Debug("Error get token from cookie")
-		http.Error(w, "", http.StatusInternalServerError)
-		return
+		userID = 0
+	} else {
+		userID, err = auth.GetUserID(token.Value)
+		if err != nil {
+			h.myLogger.Debug("Error get user ID from token")
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
-	userID, err := auth.GetUserID(token.Value)
-	if err != nil {
-		h.myLogger.Debug("Error get user ID from token")
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
-
 	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body), userID)
 	if err != nil {
 		var ue *models.UniqueError
@@ -124,16 +124,17 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 // SaveURLHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := r.Cookie("token")
+	var userID int
 	if err != nil {
 		h.myLogger.Debug("Error get token from cookie")
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
-	userID, err := auth.GetUserID(token.Value)
-	if err != nil {
-		h.myLogger.Debug("Error get user ID from token")
-		http.Error(w, "", http.StatusInternalServerError)
-		return
+		userID = 0
+	} else {
+		userID, err = auth.GetUserID(token.Value)
+		if err != nil {
+			h.myLogger.Debug("Error get user ID from token")
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	h.myLogger.Debug("start SaveURLJSONHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
@@ -222,16 +223,17 @@ return
 */
 func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := r.Cookie("token")
+	var userID int
 	if err != nil {
 		h.myLogger.Debug("Error get token from cookie")
-		http.Error(w, "", http.StatusInternalServerError)
-		return
-	}
-	userID, err := auth.GetUserID(token.Value)
-	if err != nil {
-		h.myLogger.Debug("Error get user ID from token")
-		http.Error(w, "", http.StatusInternalServerError)
-		return
+		userID = 0
+	} else {
+		userID, err = auth.GetUserID(token.Value)
+		if err != nil {
+			h.myLogger.Debug("Error get user ID from token")
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
 	}
 	h.myLogger.Debug("start SaveBatchURLHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {

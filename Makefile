@@ -27,3 +27,11 @@ migration_down:
 .PHONY: migration_force
 migration_force:
 	docker-compose up migration_db_force
+
+
+.PHONY: run_autotest
+run_autotest: build
+	~/go/shortenertest-darwin-arm64 -test.v -test.run=TestIteration1 -binary-path=./cmd/shortener/shortener -source-path=./
+
+
+	

@@ -12,8 +12,8 @@ import (
 )
 
 type TestParams struct {
-	TestLogger     *zap.Logger
-	TestPrefixAddr string
+	testLogger     *zap.Logger
+	testPrefixAddr string
 	TestStorage    map[string]models.Event
 }
 
@@ -21,8 +21,8 @@ func getParamsForTest() *TestParams {
 	tl, _ := logger.InitLog("Debug")
 
 	tp := &TestParams{
-		TestLogger:     tl,
-		TestPrefixAddr: "http://localhost:8080",
+		testLogger:     tl,
+		testPrefixAddr: "http://localhost:8080",
 		TestStorage: map[string]models.Event{
 			"1": {
 				UUID:          1,
@@ -73,7 +73,7 @@ func TestGetUserByID(t *testing.T) {
 			name: "first success getting user",
 			fields: fields{
 				storage:  paramTest.TestStorage,
-				myLogger: paramTest.TestLogger,
+				myLogger: paramTest.testLogger,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -88,7 +88,7 @@ func TestGetUserByID(t *testing.T) {
 			name: "first failed getting user",
 			fields: fields{
 				storage:  paramTest.TestStorage,
-				myLogger: paramTest.TestLogger,
+				myLogger: paramTest.testLogger,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -138,7 +138,7 @@ func TestRegisterUser(t *testing.T) {
 			name: "first success register user",
 			fields: fields{
 				storage:  paramTest.TestStorage,
-				myLogger: paramTest.TestLogger,
+				myLogger: paramTest.testLogger,
 			},
 			args: args{
 				ctx: context.Background(),

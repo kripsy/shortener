@@ -27,16 +27,16 @@ import (
 // t.Setenv("FILE_STORAGE_PATH", "")
 // envPrefixAddr := os.Getenv("BASE_URL")
 type TestParams struct {
-	TestLogger     *zap.Logger
-	TestPrefixAddr string
+	testLogger     *zap.Logger
+	testPrefixAddr string
 }
 
 func getParamsForTest() *TestParams {
 	tl, _ := logger.InitLog("Debug")
 
 	tp := &TestParams{
-		TestLogger:     tl,
-		TestPrefixAddr: "http://localhost:8080",
+		testLogger:     tl,
+		testPrefixAddr: "http://localhost:8080",
 	}
 	return tp
 }
@@ -81,13 +81,13 @@ func TestSaveURLHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			mdb := mocks.NewMockRepository(ctrl)
-			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
+			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
 
 			body := strings.NewReader(tt.body)
 
 			request := httptest.NewRequest(tt.methodType, "/", body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveURLHandler
 
 			h(w, request)
@@ -153,7 +153,7 @@ func TestGetURLHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.GetURLHandler
 
 			h(w, request)
@@ -219,13 +219,13 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			mdb := mocks.NewMockRepository(ctrl)
-			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
+			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
 			body := strings.NewReader(tt.body)
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveURLJSONHandler
 
 			h(w, request)
@@ -309,7 +309,7 @@ func TestPingDBHandler(t *testing.T) {
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
 
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.PingDBHandler
 
 			h(w, request)
@@ -386,14 +386,14 @@ func TestSaveBatchURLHandler(t *testing.T) {
 			fmt.Println(valueInut)
 			fmt.Println(valueOutput)
 
-			mdb.EXPECT().CreateOrGetBatchFromStorage(gomock.Any(), valueInut).Return(valueOutput, nil).AnyTimes()
+			mdb.EXPECT().CreateOrGetBatchFromStorage(gomock.Any(), valueInut, gomock.Any()).Return(valueOutput, nil).AnyTimes()
 
 			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
 			assert.NoError(t, err)
 
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveBatchURLHandler
 
 			h(w, request)

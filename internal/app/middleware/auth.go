@@ -43,12 +43,12 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 			}
 
 			m.MyLogger.Debug("No Cookie")
-			m.setNewCookie(w)
+			m.setNewCookie(w, r)
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// continue if cookie empty
+		// continue if cookie not empty
 		tokenString := cookie.Value
 		m.MyLogger.Debug("Current Cookie", zap.String("msg", tokenString))
 
@@ -56,7 +56,7 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 		m.MyLogger.Debug("Current token is valid?", zap.Bool("msg", tokenIsValid))
 
 		if !tokenIsValid {
-			err = m.setNewCookie(w)
+			err = m.setNewCookie(w, r)
 			if err != nil {
 				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -75,7 +75,7 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (m *MyMiddleware) setNewCookie(w http.ResponseWriter) error {
+func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) error {
 	// generate new token
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -106,5 +106,6 @@ func (m *MyMiddleware) setNewCookie(w http.ResponseWriter) error {
 	}
 
 	http.SetCookie(w, cookie)
+	r.AddCookie(cookie)
 	return nil
 }

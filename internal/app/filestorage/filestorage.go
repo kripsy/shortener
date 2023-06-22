@@ -14,7 +14,7 @@ import (
 )
 
 type FileStorage struct {
-	memoryStorage map[string]string
+	memoryStorage map[string]models.Event
 	fileName      string
 	myLogger      *zap.Logger
 }
@@ -23,7 +23,7 @@ func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, e
 	if fileName == "" {
 		return nil, errors.New("fileName is empty")
 	}
-	memoryStorage := map[string]string{}
+	memoryStorage := map[string]models.Event{}
 
 	fs := &FileStorage{
 		memoryStorage,
@@ -44,7 +44,7 @@ func (fs *FileStorage) fillMemoryStorage() error {
 		return err
 	}
 	for _, event := range events {
-		fs.memoryStorage[event.OriginalURL] = event.ShortURL
+		fs.memoryStorage[event.OriginalURL] = event
 	}
 	return nil
 }
@@ -113,9 +113,9 @@ func (c *Consumer) Close() error {
 
 func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
 
-	for originalURL, shortURL := range fs.memoryStorage {
+	for originalURL, event := range fs.memoryStorage {
 		if originalURL == url {
-			return shortURL, nil
+			return event.ShortURL, nil
 		}
 	}
 
@@ -123,7 +123,7 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, u
 	if err != nil {
 		return "", err
 	}
-	event := models.NewEvent(shortURL, url, 1)
+	event := models.NewEvent(shortURL, url, userID)
 	Producer, err := NewProducer(fs.fileName, fs.myLogger)
 	if err != nil {
 		fs.myLogger.Error("cannot create producer")
@@ -136,7 +136,7 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, u
 		return "", err
 	}
 
-	fs.memoryStorage[url] = shortURL
+	fs.memoryStorage[url] = *event
 
 	return shortURL, nil
 }
@@ -148,7 +148,7 @@ func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL s
 	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
 
 	for k, v := range fs.memoryStorage {
-		if v == string(shortURL) {
+		if v.ShortURL == string(shortURL) {
 			ok = true
 			val = k
 			break
