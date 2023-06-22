@@ -81,6 +81,7 @@ func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) erro
 	defer cancel()
 	newUser, err := m.repo.RegisterUser(ctx)
 	if err != nil {
+		m.MyLogger.Debug("Error RegisterUser in setNewCookie", zap.String("msg", err.Error()))
 		return err
 	}
 	m.MyLogger.Debug("Created new User", zap.Any("User:", newUser))

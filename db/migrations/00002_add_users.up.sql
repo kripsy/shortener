@@ -10,6 +10,8 @@ BEGIN TRANSACTION ;
 		CONSTRAINT users_pkey PRIMARY KEY (id)
 	);
 
+    INSERT INTO users (id) values (0);
+
     ALTER TABLE urls
     ADD COLUMN user_id bigint
     REFERENCES users(id);
