@@ -224,3 +224,22 @@ func (fs *FileStorage) RegisterUser(ctx context.Context) (*models.User, error) {
 		ID: int(uuid.New().ID()),
 	}, nil
 }
+
+func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+	batchURL := &models.BatchURL{}
+	events, err := fs.readEventsFromFile()
+	if err != nil {
+		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	for _, v := range events {
+		if v.UserID == userID {
+			event := &models.Event{
+				ShortURL:    v.ShortURL,
+				OriginalURL: v.OriginalURL,
+			}
+			*batchURL = append(*batchURL, *event)
+		}
+	}
+	return batchURL, nil
+}

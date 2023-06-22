@@ -97,3 +97,19 @@ func (m InMemoryStorage) RegisterUser(ctx context.Context) (*models.User, error)
 		ID: int(uuid.New().ID()),
 	}, nil
 }
+
+func (m InMemoryStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+	batchURL := &models.BatchURL{}
+
+	for _, v := range m.storage {
+		if v.UserID == userID {
+			event := &models.Event{
+				ShortURL:    v.ShortURL,
+				OriginalURL: v.OriginalURL,
+			}
+			*batchURL = append(*batchURL, *event)
+		}
+	}
+
+	return batchURL, nil
+}

@@ -77,6 +77,21 @@ func (mr *MockRepositoryMockRecorder) CreateOrGetFromStorage(arg0, arg1, arg2 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrGetFromStorage", reflect.TypeOf((*MockRepository)(nil).CreateOrGetFromStorage), arg0, arg1, arg2)
 }
 
+// GetBatchURLFromStorage mocks base method.
+func (m *MockRepository) GetBatchURLFromStorage(arg0 context.Context, arg1 int) (*models.BatchURL, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBatchURLFromStorage", arg0, arg1)
+	ret0, _ := ret[0].(*models.BatchURL)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBatchURLFromStorage indicates an expected call of GetBatchURLFromStorage.
+func (mr *MockRepositoryMockRecorder) GetBatchURLFromStorage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBatchURLFromStorage", reflect.TypeOf((*MockRepository)(nil).GetBatchURLFromStorage), arg0, arg1)
+}
+
 // GetOriginalURLFromStorage mocks base method.
 func (m *MockRepository) GetOriginalURLFromStorage(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()

@@ -280,6 +280,7 @@ func (mdb PostgresDB) RegisterUser(ctx context.Context) (*models.User, error) {
 	_, err = stmt.ExecContext(ctx, newUserID)
 	if err != nil {
 		mdb.myLogger.Debug("Failed exec ExecContext in RegisterUser", zap.String("msg", err.Error()))
+		return nil, err
 	}
 	tx.Commit()
 
@@ -288,3 +289,71 @@ func (mdb PostgresDB) RegisterUser(ctx context.Context) (*models.User, error) {
 	}, nil
 
 }
+
+func (mdb PostgresDB) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+	batchURL := &models.BatchURL{}
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	query := `SELECT short_url, original_url from urls where user_id = $1`
+
+	stmt, err := tx.PrepareContext(ctx, query)
+
+	if err != nil {
+		mdb.myLogger.Debug("Failer to PrepareContext in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, userID)
+	if err != nil {
+		mdb.myLogger.Debug("Failer to QueryContext in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var shortURL, originalURL string
+		err = rows.Scan(&shortURL, &originalURL)
+		if err != nil {
+			mdb.myLogger.Debug("Failer to Scan in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+			return nil, err
+		}
+
+		event := &models.Event{
+			ShortURL:    shortURL,
+			OriginalURL: originalURL,
+		}
+		*batchURL = append(*batchURL, *event)
+	}
+	err = rows.Err()
+	if err != nil {
+		mdb.myLogger.Debug("Failer to Scan (rows.Err()) in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	return batchURL, nil
+}
+
+// func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+// 	batchURL := &models.BatchURL{}
+// 	events, err := fs.readEventsFromFile()
+// 	if err != nil {
+// 		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
+// 		return nil, err
+// 	}
+// 	for _, v := range events {
+// 		if v.UserID == userID {
+// 			event := &models.Event{
+// 				ShortURL:    v.ShortURL,
+// 				OriginalURL: v.OriginalURL,
+// 			}
+// 			*batchURL = append(*batchURL, *event)
+// 		}
+// 	}
+// 	return batchURL, nil
+// }

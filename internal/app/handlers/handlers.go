@@ -21,6 +21,7 @@ type Repository interface {
 	GetOriginalURLFromStorage(ctx context.Context, url string) (string, error)
 	CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error)
 	RegisterUser(ctx context.Context) (*models.User, error)
+	GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error)
 
 	GetUserByID(ctx context.Context, ID int) (*models.User, error)
 	Close()
@@ -294,8 +295,58 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 	w.Write(resp)
 }
 
+/*
+GetBatchURLHandler - handler, that return all urls, that user have sent.
+If Batch is empty - return 204
+*/
 func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) {
-	h.myLogger.Debug("Not implemented")
+	h.myLogger.Debug("start GetBatchURLHandler")
+	if r.Method != http.MethodGet {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	token, err := r.Cookie("token")
+	if err != nil {
+		h.myLogger.Debug("Error get token from cookie")
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+	userID, err := auth.GetUserID(token.Value)
+	if err != nil {
+		h.myLogger.Debug("Error get user ID from token")
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	batchURL, err := h.repository.GetBatchURLFromStorage(ctx, userID)
+	// if we got error in getFromStorage - bad request
+	if err != nil {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// if len batchURL 0 - send 204
+	if len(*batchURL) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	for i := range *batchURL {
+		(*batchURL)[i].ShortURL = utils.ReturnURL((*batchURL)[i].ShortURL, h.globalURL)
+	}
+
+	resp, err := json.Marshal(batchURL)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }
 
 // PingDBHandler — handler to check success db connection
