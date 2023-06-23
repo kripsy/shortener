@@ -38,11 +38,11 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 		if err != nil {
 			fmt.Printf("Error split bearer token %s", err.Error())
 			m.MyLogger.Debug("Error split bearer token", zap.String("msg", err.Error()))
-			if isURLProtected {
-				m.MyLogger.Debug("Error split bearer token and URL protected")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
+			// if isURLProtected {
+			// 	m.MyLogger.Debug("Error split bearer token and URL protected")
+			// 	w.WriteHeader(http.StatusUnauthorized)
+			// 	return
+			// }
 			// if url not protected - create new token
 			m.MyLogger.Debug("Create new token")
 			_, err = m.setNewCookie(w, r)
