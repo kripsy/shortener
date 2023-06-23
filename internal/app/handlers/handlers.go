@@ -66,19 +66,10 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	isUniqueError := false
-	token, err := r.Cookie("token")
-	var userID int
-	if err != nil {
-		h.myLogger.Debug("Error get token from cookie")
-		userID = 0
-	} else {
-		userID, err = auth.GetUserID(token.Value)
-		if err != nil {
-			h.myLogger.Debug("Error get user ID from token")
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-	}
+
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
+
 	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body), userID)
 	if err != nil {
 		var ue *models.UniqueError
@@ -124,19 +115,8 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 
 // SaveURLHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := r.Cookie("token")
-	var userID int
-	if err != nil {
-		h.myLogger.Debug("Error get token from cookie")
-		userID = 0
-	} else {
-		userID, err = auth.GetUserID(token.Value)
-		if err != nil {
-			h.myLogger.Debug("Error get user ID from token")
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-	}
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
 	h.myLogger.Debug("start SaveURLJSONHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
 		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
@@ -223,19 +203,8 @@ return
 ]
 */
 func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := r.Cookie("token")
-	var userID int
-	if err != nil {
-		h.myLogger.Debug("Error get token from cookie")
-		userID = 0
-	} else {
-		userID, err = auth.GetUserID(token.Value)
-		if err != nil {
-			h.myLogger.Debug("Error get user ID from token")
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-	}
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
 	h.myLogger.Debug("start SaveBatchURLHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
 		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
@@ -305,18 +274,8 @@ func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
-	token, err := r.Cookie("token")
-	if err != nil {
-		h.myLogger.Debug("Error get token from cookie")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
-	userID, err := auth.GetUserID(token.Value)
-	if err != nil {
-		h.myLogger.Debug("Error get user ID from token")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,67 +28,122 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 		isURLProtected := utils.StingContains(protectedURL, r.URL.Path)
 		m.MyLogger.Debug("URL protected value", zap.Bool("msg", isURLProtected))
 
-		// get jwt token from cookie
-		cookie, err := r.Cookie("token")
+		// try get token from header
+
+		token, err := utils.GetToken(w, r)
+		fmt.Println(token)
+
+		// if token empty and url is protected -  return 401
 		if err != nil {
-			// return if error to get cookie
-			if !errors.Is(err, http.ErrNoCookie) {
-				m.MyLogger.Debug("Error get Cookie", zap.String("msg", err.Error()))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+			m.MyLogger.Debug("Error split bearer token", zap.String("msg", err.Error()))
 			if isURLProtected {
+				m.MyLogger.Debug("Error split bearer token and URL protected")
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-
-			m.MyLogger.Debug("No Cookie")
-			m.setNewCookie(w, r)
+			// if url not protected - create new token
+			m.MyLogger.Debug("Create new token")
+			token, err = m.setNewCookie(w, r)
+			if err != nil {
+				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// continue if cookie not empty
-		tokenString := cookie.Value
-		m.MyLogger.Debug("Current Cookie", zap.String("msg", tokenString))
-
-		tokenIsValid, _ := auth.IsTokenValid(tokenString)
-		m.MyLogger.Debug("Current token is valid?", zap.Bool("msg", tokenIsValid))
-
+		tokenIsValid, _ := auth.IsTokenValid(token)
 		if !tokenIsValid {
-			err = m.setNewCookie(w, r)
+			token, err = m.setNewCookie(w, r)
 			if err != nil {
 				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		}
+		m.MyLogger.Debug("tokenIsValid", zap.Bool("msg", tokenIsValid))
 
-		_, err = auth.GetUserID(tokenString)
+		_, err = auth.GetUserID(token)
 		if err != nil {
-			m.MyLogger.Debug("Error get user ID from token", zap.String("msg", err.Error()))
-			w.WriteHeader(http.StatusInternalServerError)
+			if isURLProtected {
+				m.MyLogger.Debug("Error get user", zap.String("msg", err.Error()))
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			// if url not protected - create new token
+			m.MyLogger.Debug("Create new token")
+			token, err = m.setNewCookie(w, r)
+			if err != nil {
+				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			next.ServeHTTP(w, r)
 			return
 		}
+
+		// // get jwt token from cookie
+		// cookie, err := r.Cookie("token")
+		// if err != nil {
+		// 	// return if error to get cookie
+		// 	if !errors.Is(err, http.ErrNoCookie) {
+		// 		m.MyLogger.Debug("Error get Cookie", zap.String("msg", err.Error()))
+		// 		w.WriteHeader(http.StatusInternalServerError)
+		// 		return
+		// 	}
+		// 	if isURLProtected {
+		// 		w.WriteHeader(http.StatusUnauthorized)
+		// 		return
+		// 	}
+
+		// 	m.MyLogger.Debug("No Cookie")
+		// 	m.setNewCookie(w, r)
+		// 	next.ServeHTTP(w, r)
+		// 	return
+		// }
+
+		// // continue if cookie not empty
+		// tokenString := cookie.Value
+		// m.MyLogger.Debug("Current Cookie", zap.String("msg", tokenString))
+
+		// tokenIsValid, _ := auth.IsTokenValid(tokenString)
+		// m.MyLogger.Debug("Current token is valid?", zap.Bool("msg", tokenIsValid))
+
+		// if !tokenIsValid {
+		// 	err = m.setNewCookie(w, r)
+		// 	if err != nil {
+		// 		m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
+		// 		w.WriteHeader(http.StatusInternalServerError)
+		// 		return
+		// 	}
+		// }
+
+		// _, err = auth.GetUserID(tokenString)
+		// if err != nil {
+		// 	m.MyLogger.Debug("Error get user ID from token", zap.String("msg", err.Error()))
+		// 	w.WriteHeader(http.StatusInternalServerError)
+		// 	return
+		// }
 
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) error {
+func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) (string, error) {
 	// generate new token
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	newUser, err := m.repo.RegisterUser(ctx)
 	if err != nil {
 		m.MyLogger.Debug("Error RegisterUser in setNewCookie", zap.String("msg", err.Error()))
-		return err
+		return "", err
 	}
 	m.MyLogger.Debug("Created new User", zap.Any("User:", newUser))
 	token, err := auth.BuildJWTString(newUser.ID)
 	if err != nil {
 		m.MyLogger.Debug("Error JWTMiddleware", zap.String("msg", err.Error()))
-		return err
+		return "", err
 	}
 
 	m.MyLogger.Debug("Token was generated", zap.String("msg", token))
@@ -96,7 +151,7 @@ func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) erro
 	expTime, err := auth.GetExpires(token)
 	if err != nil {
 		m.MyLogger.Debug("Error JWTMiddleware", zap.String("msg", err.Error()))
-		return err
+		return "", err
 	}
 
 	// generate cookie
@@ -106,7 +161,8 @@ func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) erro
 		Expires: expTime,
 	}
 	w.Header().Add("Authorization", "Bearer "+token)
+	r.Header.Add("Authorization", "Bearer "+token)
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)
-	return nil
+	return token, nil
 }
