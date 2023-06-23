@@ -43,7 +43,7 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 			}
 			// if url not protected - create new token
 			m.MyLogger.Debug("Create new token")
-			token, err = m.setNewCookie(w, r)
+			_, err = m.setNewCookie(w, r)
 			if err != nil {
 				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -73,7 +73,7 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 			}
 			// if url not protected - create new token
 			m.MyLogger.Debug("Create new token")
-			token, err = m.setNewCookie(w, r)
+			_, err = m.setNewCookie(w, r)
 			if err != nil {
 				m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
@@ -82,50 +82,6 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-
-		// // get jwt token from cookie
-		// cookie, err := r.Cookie("token")
-		// if err != nil {
-		// 	// return if error to get cookie
-		// 	if !errors.Is(err, http.ErrNoCookie) {
-		// 		m.MyLogger.Debug("Error get Cookie", zap.String("msg", err.Error()))
-		// 		w.WriteHeader(http.StatusInternalServerError)
-		// 		return
-		// 	}
-		// 	if isURLProtected {
-		// 		w.WriteHeader(http.StatusUnauthorized)
-		// 		return
-		// 	}
-
-		// 	m.MyLogger.Debug("No Cookie")
-		// 	m.setNewCookie(w, r)
-		// 	next.ServeHTTP(w, r)
-		// 	return
-		// }
-
-		// // continue if cookie not empty
-		// tokenString := cookie.Value
-		// m.MyLogger.Debug("Current Cookie", zap.String("msg", tokenString))
-
-		// tokenIsValid, _ := auth.IsTokenValid(tokenString)
-		// m.MyLogger.Debug("Current token is valid?", zap.Bool("msg", tokenIsValid))
-
-		// if !tokenIsValid {
-		// 	err = m.setNewCookie(w, r)
-		// 	if err != nil {
-		// 		m.MyLogger.Debug("Error set cookie", zap.String("msg", err.Error()))
-		// 		w.WriteHeader(http.StatusInternalServerError)
-		// 		return
-		// 	}
-		// }
-
-		// _, err = auth.GetUserID(tokenString)
-		// if err != nil {
-		// 	m.MyLogger.Debug("Error get user ID from token", zap.String("msg", err.Error()))
-		// 	w.WriteHeader(http.StatusInternalServerError)
-		// 	return
-		// }
-
 		next.ServeHTTP(w, r)
 	})
 }

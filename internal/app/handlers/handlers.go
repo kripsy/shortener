@@ -275,8 +275,9 @@ func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	token, _ := utils.GetToken(w, r)
+	fmt.Println(token)
 	userID, _ := auth.GetUserID(token)
-
+	fmt.Println(userID)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
