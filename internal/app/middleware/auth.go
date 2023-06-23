@@ -22,6 +22,7 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 		protectedURL := []string{
 			"/api/user/urls",
 		}
+		fmt.Println("Start JWTMiddleware")
 		m.MyLogger.Debug("Start JWTMiddleware")
 
 		// check if current URL is protected
@@ -29,12 +30,13 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 		m.MyLogger.Debug("URL protected value", zap.Bool("msg", isURLProtected))
 
 		// try get token from header
-
+		fmt.Println(33)
 		token, err := utils.GetToken(w, r)
 		fmt.Println(token)
 
 		// if token empty and url is protected -  return 401
 		if err != nil {
+			fmt.Printf("Error split bearer token %s", err.Error())
 			m.MyLogger.Debug("Error split bearer token", zap.String("msg", err.Error()))
 			if isURLProtected {
 				m.MyLogger.Debug("Error split bearer token and URL protected")

@@ -64,6 +64,7 @@ func GetToken(w http.ResponseWriter, r *http.Request) (string, error) {
 	if tokenString != "" {
 		fmt.Printf("get token from header: %s\n", tokenString)
 		token, _ = GetTokenFromBearer(tokenString)
+		fmt.Printf("token %s\n", token)
 	}
 	if token != "" {
 		return token, nil
