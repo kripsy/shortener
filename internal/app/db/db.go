@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -114,12 +115,13 @@ func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string, us
 }
 func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) {
 	mdb.myLogger.Debug("start GetOriginalURLFromStorage")
-	query := `SELECT original_url
+	query := `SELECT original_url, is_deleted
 	FROM public.urls where short_url = $1;`
 	var originalURL string
+	var isDeleted bool
 	row := mdb.DB.QueryRowContext(ctx, query, shortURL)
 
-	err := row.Scan(&originalURL)
+	err := row.Scan(&originalURL, &isDeleted)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -130,7 +132,10 @@ func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL st
 		return "", err
 	}
 
-	mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL))
+	mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL), zap.Bool("is deleted?", isDeleted))
+	if isDeleted {
+		return "", models.NewIsDeletedError(shortURL, models.NewIsDeletedError(shortURL, errors.New("")))
+	}
 	return originalURL, nil
 }
 
@@ -339,21 +344,39 @@ func (mdb PostgresDB) GetBatchURLFromStorage(ctx context.Context, userID int) (*
 	return batchURL, nil
 }
 
-// func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
-// 	batchURL := &models.BatchURL{}
-// 	events, err := fs.readEventsFromFile()
-// 	if err != nil {
-// 		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
-// 		return nil, err
-// 	}
-// 	for _, v := range events {
-// 		if v.UserID == userID {
-// 			event := &models.Event{
-// 				ShortURL:    v.ShortURL,
-// 				OriginalURL: v.OriginalURL,
-// 			}
-// 			*batchURL = append(*batchURL, *event)
-// 		}
-// 	}
-// 	return batchURL, nil
-// }
+func (mdb PostgresDB) DeleteBatchURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+	mdb.myLogger.Debug("started DeleteBatchURLFromStorage")
+	mdb.myLogger.Debug("shortURL in DeleteBatchURLFromStorage", zap.Any("msg", shortURL))
+	mdb.myLogger.Debug("userID in DeleteBatchURLFromStorage", zap.Int("msg", userID))
+
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in DeleteBatchURLFromStorage", zap.String("msg", err.Error()))
+		return err
+	}
+
+	defer tx.Rollback()
+
+	urls := squirrel.Update("urls").
+		Set("is_deleted", true).
+		Where(squirrel.And{
+			squirrel.Eq{"short_url": shortURL},
+			squirrel.Eq{"user_id": userID},
+			squirrel.Eq{"is_deleted": nil}}).
+		PlaceholderFormat(squirrel.Dollar)
+	sql, args, err := urls.ToSql()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to build sql usersID", zap.String("msg", err.Error()))
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, sql, args...)
+	if err != nil {
+		mdb.myLogger.Debug("Failed to exec sql", zap.String("msg", err.Error()))
+		return err
+	}
+
+	tx.Commit()
+	mdb.myLogger.Debug("Success commit DeleteBatchURLFromStorage")
+	return nil
+}

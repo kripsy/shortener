@@ -37,6 +37,7 @@ func InitServer(URLRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 	m.Router.Post("/api/shorten/batch", ht.SaveBatchURLHandler)
 	m.Router.Get("/ping", ht.PingDBHandler)
 	m.Router.Get("/api/user/urls", ht.GetBatchURLHandler)
+	m.Router.Delete("/api/user/urls", ht.DeleteBatchURLHandler)
 
 	return m, nil
 }

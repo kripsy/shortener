@@ -10,6 +10,7 @@ type Event struct {
 	OriginalURL   string `json:"original_url,omitempty"`
 	CorrelationID string `json:"correlation_id,omitempty"`
 	UserID        int    `json:"user_id,omitempty"`
+	IsDeleted     bool   `json:"is_deleted,omitempty"`
 }
 
 type BatchURL []Event

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"net/http"
@@ -22,6 +23,7 @@ type Repository interface {
 	CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error)
 	RegisterUser(ctx context.Context) (*models.User, error)
 	GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error)
+	DeleteBatchURLFromStorage(ctx context.Context, shortURL []string, userID int) error
 
 	GetUserByID(ctx context.Context, ID int) (*models.User, error)
 	Close()
@@ -104,6 +106,12 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(url)
 	// if we got error in getFromStorage - bad request
 	if err != nil {
+		var isDeletedError *models.IsDeletedError
+		if errors.As(err, &isDeletedError) {
+			h.myLogger.Debug("URL is deleted", zap.String("msg", shortURL))
+			http.Error(w, "", http.StatusGone)
+			return
+		}
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -320,4 +328,54 @@ func (h *APIHandler) PingDBHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 
+}
+
+func (h *APIHandler) DeleteBatchURLHandler(w http.ResponseWriter, r *http.Request) {
+
+	h.myLogger.Debug("start GetBatchURLHandler")
+	if r.Method != http.MethodDelete {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	token, _ := utils.GetToken(w, r)
+	fmt.Println(token)
+	userID, _ := auth.GetUserID(token)
+	fmt.Println(userID)
+
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		h.myLogger.Debug("Empty body")
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	h.myLogger.Debug("Read body", zap.Any("msg", string(body)))
+
+	str := string(body)
+
+	str = strings.ReplaceAll(str, `[`, "")
+	str = strings.ReplaceAll(str, `]`, "")
+	str = strings.ReplaceAll(str, " ", "")
+	str = strings.ReplaceAll(str, `"`, "")
+	splitstr := strings.Split(str, ",")
+	h.myLogger.Debug("Result body", zap.Any("msg", splitstr))
+	if splitstr[0] == "" {
+		h.myLogger.Debug("Bad req, splitstr[0] is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		h.myLogger.Debug("goroutine started with urls", zap.Any("msg", splitstr))
+		err = h.repository.DeleteBatchURLFromStorage(ctx, splitstr, userID)
+		if err != nil {
+			h.myLogger.Debug("error in goroutine DeleteBatchURLFromStorage", zap.String("msg", err.Error()))
+			return
+		}
+	}()
+
+	w.WriteHeader(http.StatusAccepted)
+	return
 }

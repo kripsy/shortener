@@ -113,3 +113,9 @@ func (m InMemoryStorage) GetBatchURLFromStorage(ctx context.Context, userID int)
 
 	return batchURL, nil
 }
+
+func (m InMemoryStorage) DeleteBatchURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+	fmt.Println("Not implemented yet")
+
+	return nil
+}

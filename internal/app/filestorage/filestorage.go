@@ -243,3 +243,9 @@ func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (
 	}
 	return batchURL, nil
 }
+
+func (fs *FileStorage) DeleteBatchURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+	fmt.Println("Not implemented yet")
+
+	return nil
+}
