@@ -118,7 +118,7 @@ func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL st
 	query := `SELECT original_url, is_deleted
 	FROM public.urls where short_url = $1;`
 	var originalURL string
-	var isDeleted bool
+	var isDeleted sql.NullBool
 	row := mdb.DB.QueryRowContext(ctx, query, shortURL)
 
 	err := row.Scan(&originalURL, &isDeleted)
@@ -132,8 +132,8 @@ func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL st
 		return "", err
 	}
 
-	mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL), zap.Bool("is deleted?", isDeleted))
-	if isDeleted {
+	if isDeleted.Valid && isDeleted.Bool {
+		mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL), zap.Bool("is deleted?", isDeleted.Bool))
 		return "", models.NewIsDeletedError(shortURL, models.NewIsDeletedError(shortURL, errors.New("")))
 	}
 	return originalURL, nil
