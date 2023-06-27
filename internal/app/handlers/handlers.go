@@ -377,5 +377,4 @@ func (h *APIHandler) DeleteBatchURLHandler(w http.ResponseWriter, r *http.Reques
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
-	return
 }
