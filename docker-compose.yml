@@ -14,19 +14,63 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   
-  postgres_db2:
-    image: postgres:13.4
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_HOST_AUTH_METHOD=trust
-      - POSTGRES_DB=praktikum
-      - PGDATA=/var/lib/postgresql/data/pgdata
-    ports:
-      - 5432:5432
+
+  migration_db_up:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "-path", "/migrations",
+        "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
+        "up"
+        ]
     volumes:
-      - pg_data2:/var/lib/postgresql/data
- 
+      - ./db/migrations:/migrations
+    depends_on:
+      - postgres_db
+  
+
+  migration_db_down:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "-path", "/migrations",
+        "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
+        "down", "-all",
+        ]
+    volumes:
+      - ./db/migrations:/migrations
+    depends_on:
+      - postgres_db
+    
+
+  migration_db_force:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "-path", "/migrations",
+        "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
+        "force", "3"
+        ]
+    volumes:
+      - ./db/migrations:/migrations
+    depends_on:
+      - postgres_db
+
+
+
+  migration_db_add:
+    image: migrate/migrate:v4.16.2
+    command:
+      [
+        "create",
+        "-dir", "/migrations",
+        "-ext", ".sql",
+        "-seq", "-digits", "5",
+        "add_url_deleted_flag"
+      ]
+    volumes:
+      - ./db/migrations:/migrations
+
 volumes:
   pg_data: {}
   pg_data2: {}

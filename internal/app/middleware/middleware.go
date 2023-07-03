@@ -5,17 +5,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kripsy/shortener/internal/app/handlers"
 	"go.uber.org/zap"
 )
 
 type MyMiddleware struct {
 	MyLogger *zap.Logger
+	repo     handlers.Repository
 }
 
-func InitMyMiddleware(myLogger *zap.Logger) *MyMiddleware {
-	// fmt.Println(myLogger)
+func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository) *MyMiddleware {
 	m := &MyMiddleware{
 		MyLogger: myLogger,
+		repo:     repo,
 	}
 	return m
 }

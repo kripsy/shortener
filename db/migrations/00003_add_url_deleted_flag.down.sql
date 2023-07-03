@@ -1,0 +1,6 @@
+BEGIN TRANSACTION;
+
+ALTER TABLE urls
+RENAME COLUMN is_deleted to __is_deleted;
+
+COMMIT;

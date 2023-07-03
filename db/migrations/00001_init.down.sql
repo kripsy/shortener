@@ -1,0 +1,5 @@
+BEGIN TRANSACTION;
+
+DROP TABLE public.urls ;
+
+COMMIT;

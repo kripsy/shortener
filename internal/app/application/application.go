@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/kripsy/shortener/internal/app/config"
 	"github.com/kripsy/shortener/internal/app/db"
@@ -12,6 +11,7 @@ import (
 	"github.com/kripsy/shortener/internal/app/handlers"
 	"github.com/kripsy/shortener/internal/app/inmemorystorage"
 	"github.com/kripsy/shortener/internal/app/logger"
+	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/server"
 	"go.uber.org/zap"
 )
@@ -56,9 +56,9 @@ func NewApp(ctx context.Context) (*App, error) {
 			myLogger.Debug("Failed init DB", zap.String("msg", err.Error()))
 			return nil, err
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-		db.CreateTables(ctx, myLogger)
+		// ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		// defer cancel()
+		// db.CreateTables(ctx, myLogger)
 		repo = db
 
 	case config.FileStorage:
@@ -72,7 +72,7 @@ func NewApp(ctx context.Context) (*App, error) {
 		// fmt.Println(err)
 
 	case config.InMemory:
-		inmemory, err := inmemorystorage.InitInMemoryStorage(map[string]string{}, myLogger)
+		inmemory, err := inmemorystorage.InitInMemoryStorage(map[string]models.Event{}, myLogger)
 		if err != nil {
 			myLogger.Debug("Failed init inmemorystorage", zap.String("msg", err.Error()))
 			return nil, err

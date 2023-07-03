@@ -1,0 +1,8 @@
+BEGIN TRANSACTION;
+
+ALTER TABLE urls
+DROP COLUMN user_id;
+
+DROP TABLE users ;
+
+COMMIT;
