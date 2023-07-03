@@ -9,29 +9,26 @@ import (
 	"github.com/pkg/errors"
 )
 
-// func for generation random short URL, consist of 5 bytes
+// CreateShortURL returns random short URL, consist 5 bytes (Why not?).
+// If we have same error, it returns empty string and error.
 func CreateShortURL() (string, error) {
-	// create slice 5 bytes
-	buf := make([]byte, 5)
 
-	// call rand.Read.
+	buf := make([]byte, 5)
 	_, err := rand.Read(buf)
 
-	// if error - return empty string and error
 	if err != nil {
 		return "", fmt.Errorf("error while generating random string: %s", err)
 	}
 
-	// print bytes in hex and return as string
 	return fmt.Sprintf("%x", buf), nil
 }
 
-// concatination global URL (address server) and endpoint (short URL)
+// ReturnURL returns an union shortURL and address of our server.
 func ReturnURL(endpoint, globalURL string) string {
 	return globalURL + "/" + endpoint
 }
 
-// function for check is searchString contain in arrayString
+// StingContains returns is searchString contain in arrayString.
 func StingContains(arrayString []string, searchString string) bool {
 	for _, v := range arrayString {
 		if v == searchString {
@@ -41,7 +38,8 @@ func StingContains(arrayString []string, searchString string) bool {
 	return false
 }
 
-// function to get token from header that consist "Bearer ...."
+// GetTokenFromBearer returns token from header.
+// Header should start from "Baerer ", otherwise return empty string and error.
 func GetTokenFromBearer(bearerString string) (string, error) {
 	splitString := strings.Split(bearerString, "Bearer ")
 	fmt.Printf("len splitString %d\n", len(splitString))
@@ -59,7 +57,7 @@ func GetTokenFromBearer(bearerString string) (string, error) {
 
 func GetToken(w http.ResponseWriter, r *http.Request) (string, error) {
 	var token string
-	// try get token from header
+
 	tokenString := r.Header.Get("Authorization")
 	if tokenString != "" {
 		fmt.Printf("get token from header: %s\n", tokenString)

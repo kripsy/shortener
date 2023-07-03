@@ -344,14 +344,14 @@ func (mdb PostgresDB) GetBatchURLFromStorage(ctx context.Context, userID int) (*
 	return batchURL, nil
 }
 
-func (mdb PostgresDB) DeleteBatchURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
-	mdb.myLogger.Debug("started DeleteBatchURLFromStorage")
-	mdb.myLogger.Debug("shortURL in DeleteBatchURLFromStorage", zap.Any("msg", shortURL))
-	mdb.myLogger.Debug("userID in DeleteBatchURLFromStorage", zap.Int("msg", userID))
+func (mdb PostgresDB) DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+	mdb.myLogger.Debug("started DeleteSliceURLFromStorage")
+	mdb.myLogger.Debug("shortURL in DeleteSliceURLFromStorage", zap.Any("msg", shortURL))
+	mdb.myLogger.Debug("userID in DeleteSliceURLFromStorage", zap.Int("msg", userID))
 
 	tx, err := mdb.DB.Begin()
 	if err != nil {
-		mdb.myLogger.Debug("Failed to Begin Tx in DeleteBatchURLFromStorage", zap.String("msg", err.Error()))
+		mdb.myLogger.Debug("Failed to Begin Tx in DeleteSliceURLFromStorage", zap.String("msg", err.Error()))
 		return err
 	}
 
@@ -365,11 +365,12 @@ func (mdb PostgresDB) DeleteBatchURLFromStorage(ctx context.Context, shortURL []
 			squirrel.Eq{"is_deleted": nil}}).
 		PlaceholderFormat(squirrel.Dollar)
 	sql, args, err := urls.ToSql()
+
 	if err != nil {
 		mdb.myLogger.Debug("Failed to build sql usersID", zap.String("msg", err.Error()))
 		return err
 	}
-
+	fmt.Println(sql)
 	_, err = tx.ExecContext(ctx, sql, args...)
 	if err != nil {
 		mdb.myLogger.Debug("Failed to exec sql", zap.String("msg", err.Error()))
@@ -377,6 +378,6 @@ func (mdb PostgresDB) DeleteBatchURLFromStorage(ctx context.Context, shortURL []
 	}
 
 	tx.Commit()
-	mdb.myLogger.Debug("Success commit DeleteBatchURLFromStorage")
+	mdb.myLogger.Debug("Success commit DeleteSliceURLFromStorage")
 	return nil
 }

@@ -2,6 +2,7 @@
 
 1. change sql/database to pgxpool
 2. change insert via pgxtool
+3. refactor comments
 
 # go-musthave-shortener-tpl
 

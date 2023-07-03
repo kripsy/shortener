@@ -23,7 +23,7 @@ type Repository interface {
 	CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error)
 	RegisterUser(ctx context.Context) (*models.User, error)
 	GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error)
-	DeleteBatchURLFromStorage(ctx context.Context, shortURL []string, userID int) error
+	DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error
 
 	GetUserByID(ctx context.Context, ID int) (*models.User, error)
 	Close()
@@ -369,9 +369,9 @@ func (h *APIHandler) DeleteBatchURLHandler(w http.ResponseWriter, r *http.Reques
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 		h.myLogger.Debug("goroutine started with urls", zap.Any("msg", splitstr))
-		err = h.repository.DeleteBatchURLFromStorage(ctx, splitstr, userID)
+		err = h.repository.DeleteSliceURLFromStorage(ctx, splitstr, userID)
 		if err != nil {
-			h.myLogger.Debug("error in goroutine DeleteBatchURLFromStorage", zap.String("msg", err.Error()))
+			h.myLogger.Debug("error in goroutine DeleteSliceURLFromStorage", zap.String("msg", err.Error()))
 			return
 		}
 	}()
