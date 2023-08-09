@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -86,16 +87,16 @@ func (mdb PostgresDB) Close() {
 	mdb.DB.Close()
 }
 
-func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
+func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
 
 	shortURL, err := utils.CreateShortURL()
 	if err != nil {
 		return "", err
 	}
-	event := models.NewEvent(shortURL, url)
-	query := `INSERT INTO public.urls(id, original_url, short_url)
-	VALUES ($1, $2, $3);`
-	_, err = mdb.DB.ExecContext(ctx, query, event.UUID, event.OriginalURL, event.ShortURL)
+	event := models.NewEvent(shortURL, url, userID)
+	query := `INSERT INTO public.urls(id, original_url, short_url, user_id)
+	VALUES ($1, $2, $3, $4);`
+	_, err = mdb.DB.ExecContext(ctx, query, event.UUID, event.OriginalURL, event.ShortURL, event.UserID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -114,12 +115,13 @@ func (mdb PostgresDB) CreateOrGetFromStorage(ctx context.Context, url string) (s
 }
 func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) {
 	mdb.myLogger.Debug("start GetOriginalURLFromStorage")
-	query := `SELECT original_url
+	query := `SELECT original_url, is_deleted
 	FROM public.urls where short_url = $1;`
 	var originalURL string
+	var isDeleted sql.NullBool
 	row := mdb.DB.QueryRowContext(ctx, query, shortURL)
 
-	err := row.Scan(&originalURL)
+	err := row.Scan(&originalURL, &isDeleted)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -130,7 +132,10 @@ func (mdb PostgresDB) GetOriginalURLFromStorage(ctx context.Context, shortURL st
 		return "", err
 	}
 
-	mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL))
+	if isDeleted.Valid && isDeleted.Bool {
+		mdb.myLogger.Debug("Got Original URL", zap.String("msg", originalURL), zap.Bool("is deleted?", isDeleted.Bool))
+		return "", models.NewIsDeletedError(shortURL, models.NewIsDeletedError(shortURL, errors.New("")))
+	}
 	return originalURL, nil
 }
 
@@ -155,16 +160,17 @@ func (mdb PostgresDB) isOriginalURLExist(ctx context.Context, url string) (strin
 	return shortURL, nil
 }
 
-func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
+func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error) {
 	mdb.myLogger.Debug("Start CreateOrGetBatchFromStorage", zap.Any("msg", *(batchURL)))
 	tx, err := mdb.DB.Begin()
 	if err != nil {
 		mdb.myLogger.Debug("Failed to Begin Tx in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
 		return nil, err
 	}
+	mdb.myLogger.Debug("UserID", zap.Int("msg", userID))
 
 	defer tx.Rollback()
-	query := `INSERT INTO public.urls(id, original_url, short_url) VALUES ($1, $2, $3);`
+	query := `INSERT INTO public.urls(id, original_url, short_url, user_id) VALUES ($1, $2, $3, $4);`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		mdb.myLogger.Debug("Failed to PrepareContext in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
@@ -193,9 +199,9 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 			return nil, err
 		}
 
-		event := models.NewEvent(shortURL, v.OriginalURL)
+		event := models.NewEvent(shortURL, v.OriginalURL, userID)
 
-		_, err = stmt.ExecContext(ctx, event.UUID, event.OriginalURL, event.ShortURL)
+		_, err = stmt.ExecContext(ctx, event.UUID, event.OriginalURL, event.ShortURL, event.UserID)
 		if err != nil {
 			mdb.myLogger.Debug("Failed exec ExecContext in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
 			return nil, err
@@ -205,4 +211,173 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 	}
 	tx.Commit()
 	return batchURL, nil
+}
+
+func (mdb PostgresDB) GetUserByID(ctx context.Context, ID int) (*models.User, error) {
+
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (mdb PostgresDB) getNextUserID(ctx context.Context) (int, error) {
+	tx, err := mdb.DB.Begin()
+	var userID int
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in GetNextUserID", zap.String("msg", err.Error()))
+		return -1, err
+	}
+
+	defer tx.Rollback()
+	query := `SELECT CASE
+			WHEN count(id)<1 THEN 1
+			ELSE max(id)+1
+			END 
+  		FROM users;`
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		mdb.myLogger.Debug("Failed to PrepareContext in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return -1, err
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx)
+	err = row.Scan(&userID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			mdb.myLogger.Debug("URL not exist", zap.String("msg", err.Error()))
+			return -1, err
+		}
+		mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))
+		return -1, err
+	}
+
+	tx.Commit()
+	return userID, nil
+}
+
+func (mdb PostgresDB) RegisterUser(ctx context.Context) (*models.User, error) {
+
+	newUserID, err := mdb.getNextUserID(ctx)
+	if err != nil {
+		mdb.myLogger.Debug("Failed to getNextUserID in RegisterUser", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	mdb.myLogger.Debug("newUserID", zap.Int("msg", newUserID))
+
+	tx, err := mdb.DB.Begin()
+
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in RegisterUser", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	defer tx.Rollback()
+	query := `INSERT INTO users (id) values ($1);`
+	stmt, err := tx.PrepareContext(ctx, query)
+
+	if err != nil {
+		mdb.myLogger.Debug("Failed to PrepareContext in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, newUserID)
+	if err != nil {
+		mdb.myLogger.Debug("Failed exec ExecContext in RegisterUser", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	tx.Commit()
+
+	return &models.User{
+		ID: newUserID,
+	}, nil
+
+}
+
+func (mdb PostgresDB) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+	batchURL := &models.BatchURL{}
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	query := `SELECT short_url, original_url from urls where user_id = $1`
+
+	stmt, err := tx.PrepareContext(ctx, query)
+
+	if err != nil {
+		mdb.myLogger.Debug("Failer to PrepareContext in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, userID)
+	if err != nil {
+		mdb.myLogger.Debug("Failer to QueryContext in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var shortURL, originalURL string
+		err = rows.Scan(&shortURL, &originalURL)
+		if err != nil {
+			mdb.myLogger.Debug("Failer to Scan in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+			return nil, err
+		}
+
+		event := &models.Event{
+			ShortURL:    shortURL,
+			OriginalURL: originalURL,
+		}
+		*batchURL = append(*batchURL, *event)
+	}
+	err = rows.Err()
+	if err != nil {
+		mdb.myLogger.Debug("Failer to Scan (rows.Err()) in GetBatchURLFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
+	return batchURL, nil
+}
+
+func (mdb PostgresDB) DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+	mdb.myLogger.Debug("started DeleteSliceURLFromStorage")
+	mdb.myLogger.Debug("shortURL in DeleteSliceURLFromStorage", zap.Any("msg", shortURL))
+	mdb.myLogger.Debug("userID in DeleteSliceURLFromStorage", zap.Int("msg", userID))
+
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in DeleteSliceURLFromStorage", zap.String("msg", err.Error()))
+		return err
+	}
+
+	defer tx.Rollback()
+
+	urls := squirrel.Update("urls").
+		Set("is_deleted", true).
+		Where(squirrel.And{
+			squirrel.Eq{"short_url": shortURL},
+			squirrel.Eq{"user_id": userID},
+			squirrel.Eq{"is_deleted": nil}}).
+		PlaceholderFormat(squirrel.Dollar)
+	sql, args, err := urls.ToSql()
+
+	if err != nil {
+		mdb.myLogger.Debug("Failed to build sql usersID", zap.String("msg", err.Error()))
+		return err
+	}
+	fmt.Println(sql)
+	_, err = tx.ExecContext(ctx, sql, args...)
+	if err != nil {
+		mdb.myLogger.Debug("Failed to exec sql", zap.String("msg", err.Error()))
+		return err
+	}
+
+	tx.Commit()
+	mdb.myLogger.Debug("Success commit DeleteSliceURLFromStorage")
+	return nil
 }

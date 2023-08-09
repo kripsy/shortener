@@ -1,6 +1,8 @@
 # TO DO
+
 1. change sql/database to pgxpool
 2. change insert via pgxtool
+3. refactor comments
 
 # go-musthave-shortener-tpl
 
@@ -35,15 +37,16 @@ git fetch template && git checkout template/main .github
 
 Подробнее про локальный и автоматический запуск читайте в [README автотестов](https://github.com/Yandex-Practicum/go-autotests).
 
-
 ## Вспомогательный материал
 
 Скомпилировать для автотестов
+
 ```
-cd ~/go/src/self_dev/sprints/shortener/ & go build -o ./cmd/shortener/shortener ./cmd/shortener/*.go &chmod +x ./cmd/shortener/shortener 
+cd ~/go/src/self_dev/sprints/shortener/ & go build -o ./cmd/shortener/shortener ./cmd/shortener/*.go &chmod +x ./cmd/shortener/shortener
 ```
 
 Запустить автотесты
+
 ```
 ~/go/external_untrusted_bin/shortenertest-darwin-arm64 -test.v -test.run='^TestIteration1$' -binary-path=./cmd/shortener/shortener
 ```
@@ -53,6 +56,7 @@ cd ~/go/src/self_dev/sprints/shortener/ & go build -o ./cmd/shortener/shortener 
 ```
 
 Пример запуска с указанием флагов
+
 ```
 go run ./cmd/shortener/main.go -a=localhost:8080 -b=http://localhost:8080
 ```
@@ -62,7 +66,9 @@ go run ./cmd/shortener/main.go -l "Debug" -d "host=localhost user=urls password=
 R sslmode=disable port=5432"
 
 ```
+
 go run ./cmd/shortener/main.go -l "Debug" -f "./test.json"
+
 ```
 
 go run ./cmd/shortener/main.go -l "Debug" -d "host=localhost user=urls password=jf6y5Sfnxsu
@@ -70,15 +76,17 @@ R sslmode=disable port=5432"
 ```
 
 Пример запуска тестов локально
+
 ```
 go test ./... -cover -v
 ```
 
 Пример формирования моков
+
 ```
 create mocks
 mockgen -destination=internal/app/mocks/mock_db.go -package=mocks github.com/kripsy/shortener/internal/app/handlers Repository
 ```
 
 Пример запуска автотестов из CI CD
- ~/go/src/self_dev/go-autotests/bin/shortenertest -test.v -test.run='^TestIteration12$' -binary-path=./cmd/shortener/shortener -source-path=./ --database-dsn='host=localhost user=postgres  sslmode=disable port=5432 '
+~/go/src/go-autotests/bin/shortenertest -test.v -test.run='^TestIteration1$' -binary-path=/Users/18935376/go/src/yandex_education/shortener/bin/shortener -source-path=/Users/18935376/go/src/yandex_education/shortener/ --database-dsn='postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable'

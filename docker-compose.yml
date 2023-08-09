@@ -49,7 +49,7 @@ services:
       [
         "-path", "/migrations",
         "-database" , "postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable",
-        "force", "1"
+        "force", "3"
         ]
     volumes:
       - ./db/migrations:/migrations
@@ -66,7 +66,7 @@ services:
         "-dir", "/migrations",
         "-ext", ".sql",
         "-seq", "-digits", "5",
-        "init"
+        "add_url_deleted_flag"
       ]
     volumes:
       - ./db/migrations:/migrations

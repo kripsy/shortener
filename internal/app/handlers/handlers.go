@@ -6,20 +6,26 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"net/http"
 
+	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
 
 type Repository interface {
-	CreateOrGetFromStorage(ctx context.Context, url string) (string, error)
+	CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error)
 	GetOriginalURLFromStorage(ctx context.Context, url string) (string, error)
-	CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error)
+	CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error)
+	RegisterUser(ctx context.Context) (*models.User, error)
+	GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error)
+	DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error
 
+	GetUserByID(ctx context.Context, ID int) (*models.User, error)
 	Close()
 	Ping() error
 }
@@ -62,7 +68,11 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	isUniqueError := false
-	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body))
+
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
+
+	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body), userID)
 	if err != nil {
 		var ue *models.UniqueError
 		if errors.As(err, &ue) {
@@ -96,7 +106,12 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(url)
 	// if we got error in getFromStorage - bad request
 	if err != nil {
-
+		var isDeletedError *models.IsDeletedError
+		if errors.As(err, &isDeletedError) {
+			h.myLogger.Debug("URL is deleted", zap.String("msg", shortURL))
+			http.Error(w, "", http.StatusGone)
+			return
+		}
 		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
@@ -108,7 +123,8 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 
 // SaveURLHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
-
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
 	h.myLogger.Debug("start SaveURLJSONHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
 		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
@@ -136,7 +152,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 	h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
 
 	isUniqueError := false
-	val, err := h.repository.CreateOrGetFromStorage(context.Background(), payload.URL)
+	val, err := h.repository.CreateOrGetFromStorage(context.Background(), payload.URL, userID)
 	if err != nil {
 		var ue *models.UniqueError
 		if errors.As(err, &ue) {
@@ -195,7 +211,8 @@ return
 ]
 */
 func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request) {
-
+	token, _ := utils.GetToken(w, r)
+	userID, _ := auth.GetUserID(token)
 	h.myLogger.Debug("start SaveBatchURLHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
 		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
@@ -229,7 +246,7 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 
 	h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
 
-	val, err := h.repository.CreateOrGetBatchFromStorage(context.Background(), payload)
+	val, err := h.repository.CreateOrGetBatchFromStorage(context.Background(), payload, userID)
 	if err != nil {
 		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
 		http.Error(w, "", http.StatusBadRequest)
@@ -255,6 +272,51 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 	w.Write(resp)
 }
 
+/*
+GetBatchURLHandler - handler, that return all urls, that user have sent.
+If Batch is empty - return 204
+*/
+func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) {
+	h.myLogger.Debug("start GetBatchURLHandler")
+	if r.Method != http.MethodGet {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	token, _ := utils.GetToken(w, r)
+	fmt.Println(token)
+	userID, _ := auth.GetUserID(token)
+	fmt.Println(userID)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	batchURL, err := h.repository.GetBatchURLFromStorage(ctx, userID)
+	// if we got error in getFromStorage - bad request
+	if err != nil {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// if len batchURL 0 - send 204
+	if len(*batchURL) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	for i := range *batchURL {
+		(*batchURL)[i].ShortURL = utils.ReturnURL((*batchURL)[i].ShortURL, h.globalURL)
+	}
+
+	resp, err := json.Marshal(batchURL)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+}
+
 // PingDBHandler — handler to check success db connection
 func (h *APIHandler) PingDBHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -266,4 +328,53 @@ func (h *APIHandler) PingDBHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 
+}
+
+func (h *APIHandler) DeleteBatchURLHandler(w http.ResponseWriter, r *http.Request) {
+
+	h.myLogger.Debug("start GetBatchURLHandler")
+	if r.Method != http.MethodDelete {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	token, _ := utils.GetToken(w, r)
+	fmt.Println(token)
+	userID, _ := auth.GetUserID(token)
+	fmt.Println(userID)
+
+	body, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		h.myLogger.Debug("Empty body")
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	h.myLogger.Debug("Read body", zap.Any("msg", string(body)))
+
+	str := string(body)
+
+	str = strings.ReplaceAll(str, `[`, "")
+	str = strings.ReplaceAll(str, `]`, "")
+	str = strings.ReplaceAll(str, " ", "")
+	str = strings.ReplaceAll(str, `"`, "")
+	splitstr := strings.Split(str, ",")
+	h.myLogger.Debug("Result body", zap.Any("msg", splitstr))
+	if splitstr[0] == "" {
+		h.myLogger.Debug("Bad req, splitstr[0] is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		h.myLogger.Debug("goroutine started with urls", zap.Any("msg", splitstr))
+		err = h.repository.DeleteSliceURLFromStorage(ctx, splitstr, userID)
+		if err != nil {
+			h.myLogger.Debug("error in goroutine DeleteSliceURLFromStorage", zap.String("msg", err.Error()))
+			return
+		}
+	}()
+
+	w.WriteHeader(http.StatusAccepted)
 }
