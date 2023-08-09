@@ -14,7 +14,6 @@ import (
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/mocks"
 	"github.com/kripsy/shortener/internal/app/models"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -27,16 +26,16 @@ import (
 // t.Setenv("FILE_STORAGE_PATH", "")
 // envPrefixAddr := os.Getenv("BASE_URL")
 type TestParams struct {
-	TestLogger     *zap.Logger
-	TestPrefixAddr string
+	testLogger     *zap.Logger
+	testPrefixAddr string
 }
 
 func getParamsForTest() *TestParams {
 	tl, _ := logger.InitLog("Debug")
 
 	tp := &TestParams{
-		TestLogger:     tl,
-		TestPrefixAddr: "http://localhost:8080",
+		testLogger:     tl,
+		testPrefixAddr: "http://localhost:8080",
 	}
 	return tp
 }
@@ -81,13 +80,13 @@ func TestSaveURLHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			mdb := mocks.NewMockRepository(ctrl)
-			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
+			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
 
 			body := strings.NewReader(tt.body)
 
 			request := httptest.NewRequest(tt.methodType, "/", body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveURLHandler
 
 			h(w, request)
@@ -153,7 +152,7 @@ func TestGetURLHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.GetURLHandler
 
 			h(w, request)
@@ -219,13 +218,13 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			mdb := mocks.NewMockRepository(ctrl)
-			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
+			mdb.EXPECT().CreateOrGetFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return("good", nil).AnyTimes()
 			body := strings.NewReader(tt.body)
 
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveURLJSONHandler
 
 			h(w, request)
@@ -309,7 +308,7 @@ func TestPingDBHandler(t *testing.T) {
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
 
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.PingDBHandler
 
 			h(w, request)
@@ -386,14 +385,14 @@ func TestSaveBatchURLHandler(t *testing.T) {
 			fmt.Println(valueInut)
 			fmt.Println(valueOutput)
 
-			mdb.EXPECT().CreateOrGetBatchFromStorage(gomock.Any(), valueInut).Return(valueOutput, nil).AnyTimes()
+			mdb.EXPECT().CreateOrGetBatchFromStorage(gomock.Any(), valueInut, gomock.Any()).Return(valueOutput, nil).AnyTimes()
 
 			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
 			assert.NoError(t, err)
 
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.TestPrefixAddr, paramTest.TestLogger)
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveBatchURLHandler
 
 			h(w, request)
@@ -409,6 +408,83 @@ func TestSaveBatchURLHandler(t *testing.T) {
 			err = json.Unmarshal(resp, &respModel)
 			assert.NoError(t, err)
 			assert.Equal(t, respModel, valueOutput)
+		})
+	}
+}
+
+func TestDeleteBatchURLHandler(t *testing.T) {
+	paramTest := getParamsForTest()
+
+	type fields struct {
+		repository Repository
+		globalURL  string
+		myLogger   *zap.Logger
+	}
+	type want struct {
+		contentType string
+		statusCode  int
+		body        string
+	}
+
+	tests := []struct {
+		name        string
+		request     string
+		body        string
+		methodType  string
+		contentType string
+		want        want
+	}{
+		// TODO: Add test cases.
+		{
+			// TODO: Add test cases.
+			name:        "First success delete urls",
+			request:     "/",
+			methodType:  http.MethodDelete,
+			body:        `["9260e84518", "bf04361ccc", "a75fee90c6", "f04361ccc"]`,
+			contentType: "application/json",
+
+			want: want{
+				contentType: "application/json",
+				statusCode:  202,
+			},
+		},
+		{
+			name:        "First fail to delete urls",
+			request:     "/",
+			methodType:  http.MethodDelete,
+			body:        ``,
+			contentType: "application/json",
+
+			want: want{
+				contentType: "application/json",
+				statusCode:  400,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mdb := mocks.NewMockRepository(ctrl)
+			// mdb.EXPECT().DeleteSliceURLFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
+			assert.NoError(t, err)
+
+			request.Header.Set("Content-Type", tt.contentType)
+
+			w := httptest.NewRecorder()
+			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			h := ht.DeleteBatchURLHandler
+			h(w, request)
+
+			result := w.Result()
+			defer result.Body.Close()
+
+			_, err = io.ReadAll(request.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
 	}
 }

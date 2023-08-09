@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
 
 type FileStorage struct {
-	memoryStorage map[string]string
+	memoryStorage map[string]models.Event
 	fileName      string
 	myLogger      *zap.Logger
 }
@@ -22,7 +23,7 @@ func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, e
 	if fileName == "" {
 		return nil, errors.New("fileName is empty")
 	}
-	memoryStorage := map[string]string{}
+	memoryStorage := map[string]models.Event{}
 
 	fs := &FileStorage{
 		memoryStorage,
@@ -43,7 +44,7 @@ func (fs *FileStorage) fillMemoryStorage() error {
 		return err
 	}
 	for _, event := range events {
-		fs.memoryStorage[event.OriginalURL] = event.ShortURL
+		fs.memoryStorage[event.OriginalURL] = event
 	}
 	return nil
 }
@@ -110,11 +111,11 @@ func (c *Consumer) Close() error {
 	return c.file.Close()
 }
 
-func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string) (string, error) {
+func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
 
-	for originalURL, shortURL := range fs.memoryStorage {
+	for originalURL, event := range fs.memoryStorage {
 		if originalURL == url {
-			return shortURL, nil
+			return event.ShortURL, nil
 		}
 	}
 
@@ -122,7 +123,7 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string) (
 	if err != nil {
 		return "", err
 	}
-	event := models.NewEvent(shortURL, url)
+	event := models.NewEvent(shortURL, url, userID)
 	Producer, err := NewProducer(fs.fileName, fs.myLogger)
 	if err != nil {
 		fs.myLogger.Error("cannot create producer")
@@ -135,7 +136,7 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string) (
 		return "", err
 	}
 
-	fs.memoryStorage[url] = shortURL
+	fs.memoryStorage[url] = *event
 
 	return shortURL, nil
 }
@@ -147,7 +148,7 @@ func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL s
 	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
 
 	for k, v := range fs.memoryStorage {
-		if v == string(shortURL) {
+		if v.ShortURL == string(shortURL) {
 			ok = true
 			val = k
 			break
@@ -189,10 +190,10 @@ func (fs *FileStorage) Ping() error {
 	return nil
 }
 
-func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL) (*models.BatchURL, error) {
+func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error) {
 	fs.myLogger.Debug("Start CreateOrGetBatchFromStorage")
 	for k, v := range *batchURL {
-		shortURL, err := fs.CreateOrGetFromStorage(context.Background(), v.OriginalURL)
+		shortURL, err := fs.CreateOrGetFromStorage(context.Background(), v.OriginalURL, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -200,4 +201,51 @@ func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL
 		(*batchURL)[k].OriginalURL = ""
 	}
 	return batchURL, nil
+}
+
+func (fs *FileStorage) GetUserByID(ctx context.Context, ID int) (*models.User, error) {
+	events, err := fs.readEventsFromFile()
+	if err != nil {
+		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	for _, v := range events {
+		if v.UserID == ID {
+			return &models.User{
+				ID: v.UserID,
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (fs *FileStorage) RegisterUser(ctx context.Context) (*models.User, error) {
+	return &models.User{
+		ID: int(uuid.New().ID()),
+	}, nil
+}
+
+func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+	batchURL := &models.BatchURL{}
+	events, err := fs.readEventsFromFile()
+	if err != nil {
+		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
+		return nil, err
+	}
+	for _, v := range events {
+		if v.UserID == userID {
+			event := &models.Event{
+				ShortURL:    v.ShortURL,
+				OriginalURL: v.OriginalURL,
+			}
+			*batchURL = append(*batchURL, *event)
+		}
+	}
+	return batchURL, nil
+}
+
+func (fs *FileStorage) DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+	fmt.Println("Not implemented yet")
+
+	return nil
 }
