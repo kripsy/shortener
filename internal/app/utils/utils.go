@@ -23,6 +23,18 @@ func CreateShortURL() (string, error) {
 	return fmt.Sprintf("%x", buf), nil
 }
 
+func CreateShortURLWithoutFmt() (string, error) {
+
+	buf := make([]byte, 5)
+	_, err := rand.Read(buf)
+
+	if err != nil {
+		return "", fmt.Errorf("error while generating random string: %s", err)
+	}
+
+	return string(buf[:]), nil
+}
+
 // ReturnURL returns an union shortURL and address of our server.
 func ReturnURL(endpoint, globalURL string) string {
 	return globalURL + "/" + endpoint

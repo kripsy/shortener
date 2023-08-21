@@ -90,3 +90,11 @@ mockgen -destination=internal/app/mocks/mock_db.go -package=mocks github.com/kri
 
 Пример запуска автотестов из CI CD
 ~/go/src/go-autotests/bin/shortenertest -test.v -test.run='^TestIteration1$' -binary-path=/Users/18935376/go/src/yandex_education/shortener/bin/shortener -source-path=/Users/18935376/go/src/yandex_education/shortener/ --database-dsn='postgres://urls:jf6y5SfnxsuR@172.25.0.2:5432/urls?sslmode=disable'
+
+###
+
+```
+go test -v -coverprofile cover.out ./YOUR_CODE_FOLDER/...
+go tool cover -html cover.out -o cover.html
+open cover.html
+```

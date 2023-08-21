@@ -1,0 +1,608 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>handlers: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/kripsy/shortener/internal/app/handlers/handlers.go (57.8%)</option>
+				
+				<option value="file1">github.com/kripsy/shortener/internal/app/inmemorystorage/inmemorystorage.go (11.6%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package handlers
+
+import (
+        "context"
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "strings"
+        "time"
+
+        "net/http"
+
+        "github.com/kripsy/shortener/internal/app/auth"
+        "github.com/kripsy/shortener/internal/app/models"
+        "github.com/kripsy/shortener/internal/app/utils"
+        "go.uber.org/zap"
+)
+
+type Repository interface {
+        CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error)
+        GetOriginalURLFromStorage(ctx context.Context, url string) (string, error)
+        CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error)
+        RegisterUser(ctx context.Context) (*models.User, error)
+        GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error)
+        DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error
+
+        GetUserByID(ctx context.Context, ID int) (*models.User, error)
+        Close()
+        Ping() error
+}
+
+type APIHandler struct {
+        repository Repository
+        globalURL  string
+        myLogger   *zap.Logger
+}
+
+func APIHandlerInit(repository Repository, globalURL string, myLogger *zap.Logger) (*APIHandler, error) <span class="cov8" title="1">{
+
+        ht := &amp;APIHandler{
+                repository: repository,
+                globalURL:  globalURL,
+                myLogger:   myLogger,
+        }
+        return ht, nil
+}</span>
+
+type URLResponseType struct {
+        Result string `json:"result,omitempty"`
+}
+
+type URLRequestType struct {
+        URL string `json:"url,omitempty"`
+}
+
+// SaveURLHandler — save original url, create short url into storage
+func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov8" title="1">{
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+        defer cancel()
+        isUniqueError := false
+
+        token, _ := utils.GetToken(w, r)
+        userID, _ := auth.GetUserID(token)
+
+        val, err := h.repository.CreateOrGetFromStorage(ctx, string(body), userID)
+        if err != nil </span><span class="cov0" title="0">{
+                var ue *models.UniqueError
+                if errors.As(err, &amp;ue) </span><span class="cov0" title="0">{
+                        isUniqueError = true
+                }</span> else<span class="cov0" title="0"> {
+                        h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+                        http.Error(w, "", http.StatusBadRequest)
+                        return
+                }</span>
+        }
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "plain/text")
+        if isUniqueError </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusConflict)
+        }</span> else<span class="cov8" title="1"> {
+                w.WriteHeader(http.StatusCreated)
+        }</span>
+        <span class="cov8" title="1">io.WriteString(w, utils.ReturnURL(val, h.globalURL))</span>
+}
+
+// GetURLHandler — get origin url from storage by shortURL
+func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Method != http.MethodGet </span><span class="cov0" title="0">{
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+        // remove first slash
+        <span class="cov8" title="1">shortURL := (r.URL.Path)[1:]
+        ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+        defer cancel()
+        url, err := h.repository.GetOriginalURLFromStorage(ctx, shortURL)
+        fmt.Println(url)
+        // if we got error in getFromStorage - bad request
+        if err != nil </span><span class="cov8" title="1">{
+                var isDeletedError *models.IsDeletedError
+                if errors.As(err, &amp;isDeletedError) </span><span class="cov0" title="0">{
+                        h.myLogger.Debug("URL is deleted", zap.String("msg", shortURL))
+                        http.Error(w, "", http.StatusGone)
+                        return
+                }</span>
+                <span class="cov8" title="1">http.Error(w, "", http.StatusBadRequest)
+                return</span>
+        }
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "plain/text")
+        w.Header().Set("Location", url)
+        w.WriteHeader(http.StatusTemporaryRedirect)</span>
+}
+
+// SaveURLHandler — save original url, create short url into storage with JSON
+func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        token, _ := utils.GetToken(w, r)
+        userID, _ := auth.GetUserID(token)
+        h.myLogger.Debug("start SaveURLJSONHandler")
+        if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" </span><span class="cov8" title="1">{
+                h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
+                        zap.String("Method", r.Method))
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var payload URLRequestType
+        body, err := io.ReadAll(r.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Empty body")
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">err = json.Unmarshal(body, &amp;payload)
+
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
+
+        isUniqueError := false
+        val, err := h.repository.CreateOrGetFromStorage(context.Background(), payload.URL, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                var ue *models.UniqueError
+                if errors.As(err, &amp;ue) </span><span class="cov0" title="0">{
+                        isUniqueError = true
+                }</span> else<span class="cov0" title="0"> {
+                        h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+                        http.Error(w, "", http.StatusBadRequest)
+                        return
+                }</span>
+        }
+
+        <span class="cov8" title="1">resp, err := json.Marshal(URLResponseType{
+                Result: utils.ReturnURL(val, h.globalURL),
+        })
+
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        if isUniqueError </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusConflict)
+        }</span> else<span class="cov8" title="1"> {
+
+                w.WriteHeader(http.StatusCreated)
+
+        }</span>
+
+        <span class="cov8" title="1">w.Write(resp)</span>
+
+}
+
+/*
+        SaveBatchURLHandler — save batch original url
+
+[
+
+        {
+            "correlation_id": "&lt;строковый идентификатор&gt;",
+            "original_url": "&lt;URL для сокращения&gt;"
+        },
+        ...
+
+]
+
+return
+[
+
+        {
+            "correlation_id": "&lt;строковый идентификатор из объекта запроса&gt;",
+            "short_url": "&lt;результирующий сокращённый URL&gt;"
+        },
+        ...
+
+]
+*/
+func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        token, _ := utils.GetToken(w, r)
+        userID, _ := auth.GetUserID(token)
+        h.myLogger.Debug("start SaveBatchURLHandler")
+        if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
+                        zap.String("Method", r.Method))
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">body, err := io.ReadAll(r.Body)
+        h.myLogger.Debug("Read body", zap.Any("msg", string(body)))
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Empty body")
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var payload *models.BatchURL
+        err = json.Unmarshal(body, &amp;payload)
+        fmt.Println(len(*payload))
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">if len(*payload) &lt; 1 </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Payload size &lt; 1")
+                http.Error(w, "Empty payload", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
+
+        val, err := h.repository.CreateOrGetBatchFromStorage(context.Background(), payload, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+        // important!!! short url must include server address. It's easy, but in 12 increment i forgot about it
+        <span class="cov8" title="1">for k := range *val </span><span class="cov8" title="1">{
+                (*val)[k].ShortURL = utils.ReturnURL((*val)[k].ShortURL, h.globalURL)
+        }</span>
+
+        <span class="cov8" title="1">h.myLogger.Debug("Result CreateOrGetBatchFromStorage", zap.Any("msg", val))
+
+        resp, err := json.Marshal(val)
+
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusCreated)
+        w.Write(resp)</span>
+}
+
+/*
+GetBatchURLHandler - handler, that return all urls, that user have sent.
+If Batch is empty - return 204
+*/
+func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        h.myLogger.Debug("start GetBatchURLHandler")
+        if r.Method != http.MethodGet </span><span class="cov0" title="0">{
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov0" title="0">token, _ := utils.GetToken(w, r)
+        fmt.Println(token)
+        userID, _ := auth.GetUserID(token)
+        fmt.Println(userID)
+        ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+        defer cancel()
+
+        batchURL, err := h.repository.GetBatchURLFromStorage(ctx, userID)
+        // if we got error in getFromStorage - bad request
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov0" title="0">w.Header().Set("Content-Type", "application/json")
+
+        // if len batchURL 0 - send 204
+        if len(*batchURL) == 0 </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusNoContent)
+                return
+        }</span>
+
+        <span class="cov0" title="0">for i := range *batchURL </span><span class="cov0" title="0">{
+                (*batchURL)[i].ShortURL = utils.ReturnURL((*batchURL)[i].ShortURL, h.globalURL)
+        }</span>
+
+        <span class="cov0" title="0">resp, err := json.Marshal(batchURL)
+        if err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov0" title="0">w.WriteHeader(http.StatusOK)
+        w.Write(resp)</span>
+}
+
+// PingDBHandler — handler to check success db connection
+func (h *APIHandler) PingDBHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        h.myLogger.Debug("start PingDBHandler")
+        err := h.repository.Ping()
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)</span>
+
+}
+
+func (h *APIHandler) DeleteBatchURLHandler(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+
+        h.myLogger.Debug("start GetBatchURLHandler")
+        if r.Method != http.MethodDelete </span><span class="cov0" title="0">{
+                http.Error(w, "", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">token, _ := utils.GetToken(w, r)
+        fmt.Println(token)
+        userID, _ := auth.GetUserID(token)
+        fmt.Println(userID)
+
+        body, err := io.ReadAll(r.Body)
+        defer r.Body.Close()
+        if err != nil </span><span class="cov0" title="0">{
+                h.myLogger.Debug("Empty body")
+                http.Error(w, "", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">h.myLogger.Debug("Read body", zap.Any("msg", string(body)))
+
+        str := string(body)
+
+        str = strings.ReplaceAll(str, `[`, "")
+        str = strings.ReplaceAll(str, `]`, "")
+        str = strings.ReplaceAll(str, " ", "")
+        str = strings.ReplaceAll(str, `"`, "")
+        splitstr := strings.Split(str, ",")
+        h.myLogger.Debug("Result body", zap.Any("msg", splitstr))
+        if splitstr[0] == "" </span><span class="cov8" title="1">{
+                h.myLogger.Debug("Bad req, splitstr[0] is empty")
+                w.WriteHeader(http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">go func() </span><span class="cov8" title="1">{
+                ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+                defer cancel()
+                h.myLogger.Debug("goroutine started with urls", zap.Any("msg", splitstr))
+                err = h.repository.DeleteSliceURLFromStorage(ctx, splitstr, userID)
+                if err != nil </span><span class="cov0" title="0">{
+                        h.myLogger.Debug("error in goroutine DeleteSliceURLFromStorage", zap.String("msg", err.Error()))
+                        return
+                }</span>
+        }()
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusAccepted)</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package inmemorystorage
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/google/uuid"
+        "github.com/kripsy/shortener/internal/app/models"
+        "github.com/kripsy/shortener/internal/app/utils"
+        "go.uber.org/zap"
+)
+
+type InMemoryStorage struct {
+        storage  map[string]models.Event
+        myLogger *zap.Logger
+}
+
+func InitInMemoryStorage(initValue map[string]models.Event, myLogger *zap.Logger) (*InMemoryStorage, error) <span class="cov0" title="0">{
+        m := &amp;InMemoryStorage{
+                storage:  initValue,
+                myLogger: myLogger,
+        }
+        return m, nil
+}</span>
+
+func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) <span class="cov0" title="0">{
+        // If the key exists
+        val, ok := m.storage[url]
+        if !ok </span><span class="cov0" title="0">{
+                // input into our storage
+                val, err := utils.CreateShortURL()
+                if err != nil </span><span class="cov0" title="0">{
+                        return "", err
+                }</span>
+
+                <span class="cov0" title="0">event := models.NewEvent(val, url, userID)
+                m.storage[url] = *event
+
+                return val, nil</span>
+        }
+        <span class="cov0" title="0">return val.ShortURL, nil</span>
+}
+
+func (m InMemoryStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) <span class="cov0" title="0">{
+
+        event := &amp;models.Event{}
+        ok := false
+        // for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
+
+        for k, v := range m.storage </span><span class="cov0" title="0">{
+                if v.ShortURL == string(shortURL) </span><span class="cov0" title="0">{
+                        ok = true
+                        event.OriginalURL = k
+                        break</span>
+                }
+        }
+        <span class="cov0" title="0">if !ok </span><span class="cov0" title="0">{
+                // key not exist
+                return "", fmt.Errorf("not exists")
+        }</span>
+        // If the key exists
+        <span class="cov0" title="0">return event.OriginalURL, nil</span>
+}
+
+func (m InMemoryStorage) Close() {<span class="cov0" title="0">
+}</span>
+
+func (m InMemoryStorage) Ping() error <span class="cov0" title="0">{
+        return nil
+}</span>
+
+func (m InMemoryStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error) <span class="cov0" title="0">{
+        m.myLogger.Debug("Start CreateOrGetBatchFromStorage")
+        for k, v := range *batchURL </span><span class="cov0" title="0">{
+                shortURL, err := m.CreateOrGetFromStorage(context.Background(), v.OriginalURL, 1)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov0" title="0">(*batchURL)[k].ShortURL = shortURL
+                (*batchURL)[k].OriginalURL = ""</span>
+        }
+        <span class="cov0" title="0">return batchURL, nil</span>
+}
+
+func (m InMemoryStorage) GetUserByID(ctx context.Context, ID int) (*models.User, error) <span class="cov8" title="1">{
+        for _, v := range m.storage </span><span class="cov8" title="1">{
+                if v.UserID == ID </span><span class="cov8" title="1">{
+                        return &amp;models.User{ID: ID}, nil
+                }</span>
+        }
+        <span class="cov8" title="1">return nil, fmt.Errorf("user not found")</span>
+}
+
+func (m InMemoryStorage) RegisterUser(ctx context.Context) (*models.User, error) <span class="cov8" title="1">{
+
+        return &amp;models.User{
+                ID: int(uuid.New().ID()),
+        }, nil
+}</span>
+
+func (m InMemoryStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) <span class="cov0" title="0">{
+        batchURL := &amp;models.BatchURL{}
+
+        for _, v := range m.storage </span><span class="cov0" title="0">{
+                if v.UserID == userID </span><span class="cov0" title="0">{
+                        event := &amp;models.Event{
+                                ShortURL:    v.ShortURL,
+                                OriginalURL: v.OriginalURL,
+                        }
+                        *batchURL = append(*batchURL, *event)
+                }</span>
+        }
+
+        <span class="cov0" title="0">return batchURL, nil</span>
+}
+
+func (m InMemoryStorage) DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error <span class="cov0" title="0">{
+        fmt.Println("Not implemented yet")
+
+        return nil
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
