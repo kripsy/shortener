@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/kripsy/shortener/internal/app/logger"
@@ -105,6 +106,7 @@ func TestGetUserByID(t *testing.T) {
 			m := InMemoryStorage{
 				storage:  tt.fields.storage,
 				myLogger: tt.fields.myLogger,
+				rwmutex:  &sync.RWMutex{},
 			}
 			got, err := m.GetUserByID(tt.args.ctx, tt.args.ID)
 			if (err != nil) != tt.wantErr {
@@ -153,6 +155,7 @@ func TestRegisterUser(t *testing.T) {
 			m := InMemoryStorage{
 				storage:  tt.fields.storage,
 				myLogger: tt.fields.myLogger,
+				rwmutex:  &sync.RWMutex{},
 			}
 			got, err := m.RegisterUser(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
