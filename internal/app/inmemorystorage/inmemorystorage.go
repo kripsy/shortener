@@ -31,6 +31,7 @@ func (m *InMemoryStorage) CreateOrGetFromStorageWithoutPointer(ctx context.Conte
 	m.rwmutex.RLock()
 	val, ok := m.storage[url]
 	m.rwmutex.RUnlock()
+
 	if !ok {
 		// input into our storage
 		val, err := utils.CreateShortURL()
@@ -51,7 +52,7 @@ func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string
 	// If the key exists
 	m.rwmutex.RLock()
 	val, ok := m.storage[url]
-	defer m.rwmutex.RUnlock()
+	m.rwmutex.RUnlock()
 	if !ok {
 		// input into our storage
 		val, err := utils.CreateShortURL()
@@ -110,10 +111,8 @@ func (m InMemoryStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchU
 }
 
 func (m InMemoryStorage) GetUserByID(ctx context.Context, ID int) (*models.User, error) {
-	fmt.Println(123)
 	m.rwmutex.RLock()
 	defer m.rwmutex.RUnlock()
-
 	for _, v := range m.storage {
 		if v.UserID == ID {
 			return &models.User{ID: ID}, nil
