@@ -14,8 +14,7 @@ import (
 )
 
 type MyServer struct {
-	Router *chi.Mux
-	// MyDB     handlers.Repository
+	Router   *chi.Mux
 	MyLogger *zap.Logger
 	URLRepo  string
 }
@@ -57,13 +56,6 @@ func InitServer(URLRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 	m.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 	m.Router.Handle("/debug/pprof/block", pprof.Handler("block"))
 	m.Router.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
-
-	// m.Router.HandleFunc("/debug/pprof/", pprof.Index)
-	// m.Router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	// m.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	// m.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	// m.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	// m.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 
 	return m, nil
 }

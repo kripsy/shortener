@@ -17,6 +17,11 @@ import (
 //     2.1. if jwt valid and URL protected - pass
 //     2.2. if jwt invalid/empty - generate/update new jwt
 
+// JWTMiddleware implement auth functional in hendlers.
+// If URL not protected - generate/update new jwt and set in cookie or pass if jwt is valid.
+// if URL protected:
+//  1. if jwt valid and URL protected - pass
+//  2. if jwt invalid/empty - generate/update new jwt
 func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		protectedURL := []string{
@@ -86,6 +91,7 @@ func (m *MyMiddleware) JWTMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// setNewCookie create new cookie into cookie, request and writer Headers.
 func (m *MyMiddleware) setNewCookie(w http.ResponseWriter, r *http.Request) (string, error) {
 	// generate new token
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
