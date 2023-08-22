@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
@@ -32,7 +33,7 @@ func CreateShortURLWithoutFmt() (string, error) {
 		return "", fmt.Errorf("error while generating random string: %s", err)
 	}
 
-	return string(buf[:]), nil
+	return hex.EncodeToString(buf), nil
 }
 
 // ReturnURL returns an union shortURL and address of our server.
