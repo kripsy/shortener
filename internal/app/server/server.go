@@ -1,6 +1,11 @@
 package server
 
 import (
+	"expvar"
+	"fmt"
+	"net/http"
+	"net/http/pprof"
+
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
@@ -39,5 +44,41 @@ func InitServer(URLRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 	m.Router.Get("/api/user/urls", ht.GetBatchURLHandler)
 	m.Router.Delete("/api/user/urls", ht.DeleteBatchURLHandler)
 
+	m.Router.HandleFunc("/debug/pprof/*", pprof.Index)
+	m.Router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	m.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	m.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	m.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	m.Router.HandleFunc("/debug/vars", expVars)
+
+	m.Router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	m.Router.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	m.Router.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+	m.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	m.Router.Handle("/debug/pprof/block", pprof.Handler("block"))
+	m.Router.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
+
+	// m.Router.HandleFunc("/debug/pprof/", pprof.Index)
+	// m.Router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	// m.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	// m.Router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	// m.Router.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	// m.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+
 	return m, nil
+}
+
+// Replicated from expvar.go as not public.
+func expVars(w http.ResponseWriter, r *http.Request) {
+	first := true
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "{\n")
+	expvar.Do(func(kv expvar.KeyValue) {
+		if !first {
+			fmt.Fprintf(w, ",\n")
+		}
+		first = false
+		fmt.Fprintf(w, "%q: %s", kv.Key, kv.Value)
+	})
+	fmt.Fprintf(w, "\n}\n")
 }

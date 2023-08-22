@@ -2,7 +2,10 @@ package inmemorystorage
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/kripsy/shortener/internal/app/logger"
@@ -103,6 +106,7 @@ func TestGetUserByID(t *testing.T) {
 			m := InMemoryStorage{
 				storage:  tt.fields.storage,
 				myLogger: tt.fields.myLogger,
+				rwmutex:  &sync.RWMutex{},
 			}
 			got, err := m.GetUserByID(tt.args.ctx, tt.args.ID)
 			if (err != nil) != tt.wantErr {
@@ -151,6 +155,7 @@ func TestRegisterUser(t *testing.T) {
 			m := InMemoryStorage{
 				storage:  tt.fields.storage,
 				myLogger: tt.fields.myLogger,
+				rwmutex:  &sync.RWMutex{},
 			}
 			got, err := m.RegisterUser(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
@@ -160,4 +165,66 @@ func TestRegisterUser(t *testing.T) {
 			assert.NotEmpty(t, got)
 		})
 	}
+}
+
+func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
+	paramTest := getParamsForTest()
+	m := InMemoryStorage{
+		storage:  paramTest.TestStorage,
+		myLogger: paramTest.testLogger,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.CreateOrGetFromStorageWithoutPointer(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+	}
+}
+func BenchmarkCreateOrGetFromStorage(b *testing.B) {
+	paramTest := getParamsForTest()
+	m := InMemoryStorage{
+		storage:  paramTest.TestStorage,
+		myLogger: paramTest.testLogger,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.CreateOrGetFromStorage(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+	}
+}
+
+// func BenchmarkMemoryStorageCreateOrGetFromStorage(b *testing.B) {
+// 	paramTest := getParamsForTest()
+// 	m := InMemoryStorage{
+// 		storage:  paramTest.TestStorage,
+// 		myLogger: paramTest.testLogger,
+// 	}
+
+// 	b.ResetTimer()
+// 	for i := 0; i < b.N; i++ {
+// 		events := GenerateEvents(100) // Генерирует 100 событий
+// 		m.CreateOrGetBatchFromStorage(context.Background(), &events, 1)
+// 	}
+// }
+
+// GenerateEvents создает множество событий Event
+func GenerateEvents(count int) models.BatchURL {
+	events := make(models.BatchURL, count)
+
+	for i := 0; i < count; i++ {
+		events[i] = models.Event{
+			UUID:          i + 1, // Уникальный идентификатор для каждого события
+			ShortURL:      "",
+			OriginalURL:   fmt.Sprintf("http://example.com/%d", i+1),
+			CorrelationID: fmt.Sprintf("correlation_id_%d", i+1),
+			UserID:        rand.Intn(100) + 1, // Произвольный UserID в диапазоне от 1 до 100
+			IsDeleted:     false,
+		}
+	}
+
+	return events
+}
+
+// GenerateEvents создает множество событий Event
+func GenerateURL(count int) string {
+	return fmt.Sprintf("http://example.com/%d", count+1)
 }

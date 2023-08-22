@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	_ "net/http/pprof"
+
 	"github.com/kripsy/shortener/internal/app/application"
 )
 
@@ -23,6 +25,7 @@ func main() {
 
 	fmt.Printf("SERVER_ADDRESS: %s\n", application.GetAppConfig().URLServer)
 	fmt.Printf("BASE_URL: %s\n", application.GetAppConfig().URLPrefixRepo)
+
 	err = http.ListenAndServe(application.GetAppConfig().URLServer, application.GetAppServer().Router)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)

@@ -467,7 +467,7 @@ func TestDeleteBatchURLHandler(t *testing.T) {
 			defer ctrl.Finish()
 
 			mdb := mocks.NewMockRepository(ctrl)
-			// mdb.EXPECT().DeleteSliceURLFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			mdb.EXPECT().DeleteSliceURLFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
 			assert.NoError(t, err)
 

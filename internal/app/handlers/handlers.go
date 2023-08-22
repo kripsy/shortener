@@ -71,7 +71,6 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, _ := utils.GetToken(w, r)
 	userID, _ := auth.GetUserID(token)
-
 	val, err := h.repository.CreateOrGetFromStorage(ctx, string(body), userID)
 	if err != nil {
 		var ue *models.UniqueError

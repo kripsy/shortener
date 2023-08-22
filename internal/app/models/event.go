@@ -24,3 +24,12 @@ func NewEvent(shortURL, originalURL string, userID int) *Event {
 	}
 	return e
 }
+
+func NewEventWithoutPointer(shortURL, originalURL string, userID int) Event {
+	return Event{
+		UUID:        int(uuid.New().ID()),
+		ShortURL:    shortURL,
+		OriginalURL: originalURL,
+		UserID:      userID,
+	}
+}
