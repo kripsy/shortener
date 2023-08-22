@@ -13,8 +13,6 @@ import (
 
 // CreateShortURL returns random short URL, consist 5 bytes (Why not?).
 // If we have same error, it returns empty string and error.
-//
-// Deprecated: CreateShortURLWithoutFmt use less memory, so use it.
 func CreateShortURL() (string, error) {
 
 	buf := make([]byte, 5)
