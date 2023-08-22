@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/shortener/internal/app/models"
@@ -17,6 +18,7 @@ type FileStorage struct {
 	memoryStorage map[string]models.Event
 	fileName      string
 	myLogger      *zap.Logger
+	rwmutex       *sync.RWMutex
 }
 
 func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, error) {
@@ -24,11 +26,13 @@ func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, e
 		return nil, errors.New("fileName is empty")
 	}
 	memoryStorage := map[string]models.Event{}
+	rwmutex := &sync.RWMutex{}
 
 	fs := &FileStorage{
 		memoryStorage,
 		fileName,
 		myLogger,
+		rwmutex,
 	}
 	err := fs.fillMemoryStorage()
 	if err != nil {
@@ -43,6 +47,8 @@ func (fs *FileStorage) fillMemoryStorage() error {
 		fs.myLogger.Warn("error fillMemoryStorage", zap.String("msg", err.Error()))
 		return err
 	}
+	fs.rwmutex.Lock()
+	defer fs.rwmutex.Unlock()
 	for _, event := range events {
 		fs.memoryStorage[event.OriginalURL] = event
 	}
@@ -55,6 +61,7 @@ type Producer struct {
 }
 
 func NewProducer(fileName string, myLogger *zap.Logger) (*Producer, error) {
+
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		myLogger.Warn("errror create file to producer")
@@ -112,7 +119,8 @@ func (c *Consumer) Close() error {
 }
 
 func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
-
+	fs.rwmutex.Lock()
+	defer fs.rwmutex.Unlock()
 	for originalURL, event := range fs.memoryStorage {
 		if originalURL == url {
 			return event.ShortURL, nil
@@ -143,7 +151,8 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, u
 }
 
 func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) { //([]models.Event, error)
-
+	fs.rwmutex.RLock()
+	defer fs.rwmutex.RUnlock()
 	var val string
 	ok := false
 	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
@@ -164,6 +173,8 @@ func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL s
 }
 
 func (fs *FileStorage) readEventsFromFile() ([]models.Event, error) {
+	fs.rwmutex.RLock()
+	defer fs.rwmutex.RUnlock()
 	Consumer, err := NewConsumer(fs.fileName, fs.myLogger)
 	events := []models.Event{}
 	if err != nil {
