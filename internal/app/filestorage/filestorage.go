@@ -119,7 +119,8 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, u
 		}
 	}
 
-	shortURL, err := utils.CreateShortURL()
+	// shortURL, err := utils.CreateShortURL()
+	shortURL, err := utils.CreateShortURLWithoutFmt()
 	if err != nil {
 		return "", err
 	}

@@ -3,6 +3,7 @@ package inmemorystorage
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/shortener/internal/app/models"
@@ -13,14 +14,35 @@ import (
 type InMemoryStorage struct {
 	storage  map[string]models.Event
 	myLogger *zap.Logger
+	mutex    sync.Mutex
 }
 
 func InitInMemoryStorage(initValue map[string]models.Event, myLogger *zap.Logger) (*InMemoryStorage, error) {
 	m := &InMemoryStorage{
 		storage:  initValue,
 		myLogger: myLogger,
+		mutex:    sync.Mutex{},
 	}
 	return m, nil
+}
+
+func (m *InMemoryStorage) CreateOrGetFromStorageWithoutPointer(ctx context.Context, url string, userID int) (string, error) {
+	// If the key exists
+	val, ok := m.storage[url]
+	if !ok {
+		// input into our storage
+		val, err := utils.CreateShortURL()
+		if err != nil {
+			return "", err
+		}
+
+		event := models.NewEventWithoutPointer(val, url, userID)
+		m.mutex.Lock()
+		defer m.mutex.Unlock()
+		m.storage[url] = event
+		return val, nil
+	}
+	return val.ShortURL, nil
 }
 
 func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
@@ -34,8 +56,9 @@ func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string
 		}
 
 		event := models.NewEvent(val, url, userID)
+		m.mutex.Lock()
+		defer m.mutex.Unlock()
 		m.storage[url] = *event
-
 		return val, nil
 	}
 	return val.ShortURL, nil

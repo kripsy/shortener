@@ -98,3 +98,9 @@ go test -v -coverprofile cover.out ./YOUR_CODE_FOLDER/...
 go tool cover -html cover.out -o cover.html
 open cover.html
 ```
+
+save profile memory
+```
+curl http://localhost:8080/debug/pprof/heap -o start_heap.ppro
+go tool pprof -http=":9091" ./result.pprof 
+```
