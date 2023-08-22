@@ -30,7 +30,7 @@ func (m *InMemoryStorage) CreateOrGetFromStorageWithoutPointer(ctx context.Conte
 	// If the key exists
 	m.rwmutex.RLock()
 	val, ok := m.storage[url]
-	m.rwmutex.Unlock()
+	m.rwmutex.RUnlock()
 	if !ok {
 		// input into our storage
 		val, err := utils.CreateShortURL()
@@ -51,7 +51,7 @@ func (m *InMemoryStorage) CreateOrGetFromStorage(ctx context.Context, url string
 	// If the key exists
 	m.rwmutex.RLock()
 	val, ok := m.storage[url]
-	m.rwmutex.Unlock()
+	m.rwmutex.RUnlock()
 	if !ok {
 		// input into our storage
 		val, err := utils.CreateShortURL()
