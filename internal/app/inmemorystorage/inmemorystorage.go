@@ -1,3 +1,4 @@
+// Package inmemorystorage provides functionality inmemory storage.
 package inmemorystorage
 
 import (

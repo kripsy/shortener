@@ -1,3 +1,4 @@
+// Package auth provides functionality for wotking with jwt token.
 package auth
 
 import (

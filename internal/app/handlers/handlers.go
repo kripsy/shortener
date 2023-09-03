@@ -1,3 +1,4 @@
+// Package handlers provides handlers for web server.
 package handlers
 
 import (
@@ -120,7 +121,7 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-// SaveURLHandler — save original url, create short url into storage with JSON
+// SaveURLJSONHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 	token, _ := utils.GetToken(w, r)
 	userID, _ := auth.GetUserID(token)

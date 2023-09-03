@@ -1,3 +1,4 @@
+// Package filestorage provides functionality for working with file storage.
 package filestorage
 
 import (

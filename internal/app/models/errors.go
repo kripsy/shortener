@@ -22,13 +22,13 @@ func (ue *UniqueError) Error() string {
 	return ue.Err.Error()
 }
 
-// Error represent type of error, means object was removed.
+// IsDeletedError represent type of error, means object was removed.
 type IsDeletedError struct {
 	Err  error
 	Text string
 }
 
-// NewUniqueError return new error, means object was removed.
+// NewIsDeletedError return new error, means object was removed.
 func NewIsDeletedError(shortURL string, err error) error {
 	return &IsDeletedError{
 		Text: fmt.Sprintf("%v is deleted", shortURL),

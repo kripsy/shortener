@@ -1,3 +1,4 @@
+// Package server provides functionality for web server operation.
 package server
 
 import (

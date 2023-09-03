@@ -1,3 +1,4 @@
+// Package clientutils provides general functionality for filling in the header for the client.
 package clientutils
 
 import "net/http"
