@@ -2,6 +2,7 @@
 package main
 
 import (
+	"github.com/gostaticanalysis/emptycase"
 	"github.com/masibw/goone"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
@@ -25,6 +26,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unreachable"
 	"golang.org/x/tools/go/analysis/passes/unusedresult"
 	"honnef.co/go/tools/staticcheck"
+	"honnef.co/go/tools/stylecheck"
 )
 
 func main() {
@@ -49,11 +51,19 @@ func main() {
 		unreachable.Analyzer,
 		unusedresult.Analyzer,
 		goone.Analyzer, // check sql query in loop
+
 	}
 
 	for _, v := range staticcheck.Analyzers {
 		mychecks = append(mychecks, v.Analyzer)
 	}
+
+	for _, v := range stylecheck.Analyzers {
+
+		mychecks = append(mychecks, v.Analyzer)
+
+	}
+	mychecks = append(mychecks, emptycase.Analyzer) // check empty case body
 
 	multichecker.Main(
 		mychecks...,

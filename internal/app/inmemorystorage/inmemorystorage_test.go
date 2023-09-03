@@ -16,8 +16,8 @@ import (
 
 type TestParams struct {
 	testLogger     *zap.Logger
-	testPrefixAddr string
 	TestStorage    map[string]models.Event
+	testPrefixAddr string
 }
 
 func getParamsForTest() *TestParams {
@@ -65,10 +65,10 @@ func TestGetUserByID(t *testing.T) {
 		ID  int
 	}
 	tests := []struct {
-		name    string
+		want    *models.User
 		fields  fields
 		args    args
-		want    *models.User
+		name    string
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -131,10 +131,10 @@ func TestRegisterUser(t *testing.T) {
 		ctx context.Context
 	}
 	tests := []struct {
-		name    string
+		want    *models.User
 		fields  fields
 		args    args
-		want    *models.User
+		name    string
 		wantErr bool
 	}{
 		// TODO: Add test cases.

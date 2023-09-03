@@ -4,8 +4,8 @@ import "fmt"
 
 // UniqueError represent type for uniqueness conflict error.
 type UniqueError struct {
-	Text string
 	Err  error
+	Text string
 }
 
 // NewUniqueError return new uniqueness conflict error.
@@ -14,6 +14,7 @@ func NewUniqueError(fieldName string, err error) error {
 		Text: fmt.Sprintf("%v already exists", fieldName),
 		Err:  err,
 	}
+
 }
 
 // Error to meet error intefrace by UniqueError.
@@ -23,8 +24,8 @@ func (ue *UniqueError) Error() string {
 
 // Error represent type of error, means object was removed.
 type IsDeletedError struct {
-	Text string
 	Err  error
+	Text string
 }
 
 // NewUniqueError return new error, means object was removed.

@@ -31,9 +31,9 @@ type Repository interface {
 }
 
 type APIHandler struct {
+	myLogger   *zap.Logger
 	repository Repository
 	globalURL  string
-	myLogger   *zap.Logger
 }
 
 func APIHandlerInit(repository Repository, globalURL string, myLogger *zap.Logger) (*APIHandler, error) {

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/kripsy/shortener/internal/app/config"
-	"github.com/kripsy/shortener/internal/app/db"
+	database "github.com/kripsy/shortener/internal/app/db"
 	"github.com/kripsy/shortener/internal/app/filestorage"
 	"github.com/kripsy/shortener/internal/app/handlers"
 	"github.com/kripsy/shortener/internal/app/inmemorystorage"
@@ -51,28 +51,27 @@ func NewApp(ctx context.Context) (*App, error) {
 
 	switch cfg.RepositoryType {
 	case config.PostgresDB:
-		db, err := db.InitDB(cfg.DatabaseDsn, myLogger)
+		var db *database.PostgresDB
+		db, err = database.InitDB(cfg.DatabaseDsn, myLogger)
 		if err != nil {
 			myLogger.Debug("Failed init DB", zap.String("msg", err.Error()))
 			return nil, err
 		}
-		// ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		// defer cancel()
-		// db.CreateTables(ctx, myLogger)
+
 		repo = db
 
 	case config.FileStorage:
-		fs, err := filestorage.InitFileStorageFile(cfg.FileStoragePath, myLogger)
+		var fs *filestorage.FileStorage
+		fs, err = filestorage.InitFileStorageFile(cfg.FileStoragePath, myLogger)
 		if err != nil {
 			myLogger.Debug("Failed init filestorage", zap.String("msg", err.Error()))
 			return nil, err
 		}
 		repo = fs
-		// fmt.Println(fs)
-		// fmt.Println(err)
 
 	case config.InMemory:
-		inmemory, err := inmemorystorage.InitInMemoryStorage(map[string]models.Event{}, myLogger)
+		var inmemory *inmemorystorage.InMemoryStorage
+		inmemory, err = inmemorystorage.InitInMemoryStorage(map[string]models.Event{}, myLogger)
 		if err != nil {
 			myLogger.Debug("Failed init inmemorystorage", zap.String("msg", err.Error()))
 			return nil, err
@@ -80,12 +79,8 @@ func NewApp(ctx context.Context) (*App, error) {
 		repo = inmemory
 	}
 
-	// fs := storage.InitFileStorageFile(cfg.FileStoragePath)
-	// s := storage.InitStorage(map[string]string{}, fs, myLogger)
-
-	// db, err := db.InitDB("localhost", "5432", "urls", "jf6y5SfnxsuR", "urls")
 	srv, err := server.InitServer(cfg.URLPrefixRepo, repo, myLogger)
-	// srv.MyDB = db
+
 	if err != nil {
 		myLogger.Debug("Failed init server", zap.String("msg", err.Error()))
 		return nil, err

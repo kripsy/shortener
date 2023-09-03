@@ -6,10 +6,10 @@ import (
 
 // Event represent type for record of shortener.
 type Event struct {
-	UUID          int    `json:"uuid,omitempty"`
 	ShortURL      string `json:"short_url,omitempty"`
 	OriginalURL   string `json:"original_url,omitempty"`
 	CorrelationID string `json:"correlation_id,omitempty"`
+	UUID          int    `json:"uuid,omitempty"`
 	UserID        int    `json:"user_id,omitempty"`
 	IsDeleted     bool   `json:"is_deleted,omitempty"`
 }

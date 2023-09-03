@@ -110,8 +110,8 @@ func TestSaveURLHandler(t *testing.T) {
 func TestGetURLHandler(t *testing.T) {
 	paramTest := getParamsForTest()
 	type want struct {
-		statusCode int
 		Location   string
+		statusCode int
 	}
 
 	tests := []struct {
@@ -324,8 +324,8 @@ func TestSaveBatchURLHandler(t *testing.T) {
 
 	type want struct {
 		contentType string
-		statusCode  int
 		body        string
+		statusCode  int
 	}
 
 	tests := []struct {
@@ -415,15 +415,9 @@ func TestSaveBatchURLHandler(t *testing.T) {
 func TestDeleteBatchURLHandler(t *testing.T) {
 	paramTest := getParamsForTest()
 
-	type fields struct {
-		repository Repository
-		globalURL  string
-		myLogger   *zap.Logger
-	}
 	type want struct {
 		contentType string
 		statusCode  int
-		body        string
 	}
 
 	tests := []struct {
