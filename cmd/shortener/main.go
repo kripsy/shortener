@@ -17,7 +17,7 @@ func main() {
 	application, err := application.NewApp(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	defer application.GetAppLogger().Sync() // flushes buffer, if any
@@ -29,6 +29,6 @@ func main() {
 	err = http.ListenAndServe(application.GetAppConfig().URLServer, application.GetAppServer().Router)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 }
