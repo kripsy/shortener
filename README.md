@@ -104,3 +104,6 @@ save profile memory
 curl http://localhost:8080/debug/pprof/heap -o start_heap.ppro
 go tool pprof -http=":9091" ./result.pprof 
 ```
+
+# Run with tags
+go run -ldflags "-X main.buildVersion=1.0 -X main.buildDate=2023/09/05 -X main.buildCommit=asdfg" ./cmd/shortener/main.go -l "Debug"
