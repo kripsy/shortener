@@ -51,8 +51,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return
 	}
-	defer application.GetAppLogger().Sync() // flushes buffer, if any
-	defer application.GetAppRepo().Close()  // close repo
+	defer func() { // flushes buffer, if any
+		if err := application.GetAppLogger().Sync(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return
+		}
+	}()
+
+	defer application.GetAppRepo().Close() // close repo
 
 	fmt.Printf("SERVER_ADDRESS: %s\n", application.GetAppConfig().URLServer)
 	fmt.Printf("BASE_URL: %s\n", application.GetAppConfig().URLPrefixRepo)

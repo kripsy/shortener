@@ -176,7 +176,10 @@ func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.CreateOrGetFromStorageWithoutPointer(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		_, err := m.CreateOrGetFromStorageWithoutPointer(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		if err != nil {
+			return
+		}
 	}
 }
 func BenchmarkCreateOrGetFromStorage(b *testing.B) {
@@ -188,7 +191,10 @@ func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.CreateOrGetFromStorage(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		_, err := m.CreateOrGetFromStorage(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		if err != nil {
+			return
+		}
 	}
 }
 

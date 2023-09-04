@@ -89,7 +89,12 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
-	io.WriteString(w, utils.ReturnURL(val, h.globalURL))
+	_, err = io.WriteString(w, utils.ReturnURL(val, h.globalURL))
+	if err != nil {
+		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error WriteString", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetURLHandler — get origin url from storage by shortURL
@@ -182,7 +187,12 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	}
 
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error Write", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 
 }
 
@@ -269,7 +279,12 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		h.myLogger.Debug("Error CreateOrGetBatchFromStorage", zap.String("error Write", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 }
 
 /*
@@ -314,7 +329,12 @@ func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		h.myLogger.Debug("Error GetBatchURLHandler", zap.String("error Write", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 }
 
 // PingDBHandler — handler to check success db connection
