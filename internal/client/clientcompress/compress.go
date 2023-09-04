@@ -1,3 +1,4 @@
+// Package clientcompress provides functionality for working with data compression.
 package clientcompress
 
 import (

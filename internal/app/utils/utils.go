@@ -1,3 +1,4 @@
+// Package utils provides the helpfull functionality for shortener.
 package utils
 
 import (
@@ -24,8 +25,10 @@ func CreateShortURL() (string, error) {
 	return fmt.Sprintf("%x", buf), nil
 }
 
+// CreateShortURLWithoutFmt returns random short URL, consist 5 bytes.
+// It's optimized version of CreateShortURL.
+// If we have same error, it returns empty string and error.
 func CreateShortURLWithoutFmt() (string, error) {
-
 	buf := make([]byte, 5)
 	_, err := rand.Read(buf)
 
@@ -68,6 +71,9 @@ func GetTokenFromBearer(bearerString string) (string, error) {
 	return tokenString, nil
 }
 
+// GetToken returns token from header or cookie.
+// Header should start from "Baerer ", otherwise return empty string and error.
+// BUG(Evgeniy): param w is not usefull. In future i'll refactore it.
 func GetToken(w http.ResponseWriter, r *http.Request) (string, error) {
 	var token string
 

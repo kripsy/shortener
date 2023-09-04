@@ -6,13 +6,13 @@ import (
 	"net/http"
 )
 
-// compressWriter реализует интерфейс http.ResponseWriter и позволяет прозрачно для сервера
-// сжимать передаваемые данные и выставлять правильные HTTP-заголовки
+// compressWriter realize interface http.ResponseWriter, allows compress data transparent to the server, set correct headers.
 type compressWriter struct {
 	w  http.ResponseWriter
 	zw *gzip.Writer
 }
 
+// newCompressWriter return new compressWriter pointer.
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
 		w:  w,
@@ -20,33 +20,36 @@ func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	}
 }
 
+// Header return Header of writer.
 func (c *compressWriter) Header() http.Header {
 	return c.w.Header()
 }
 
+// Write call method Write of gzip writer.
 func (c *compressWriter) Write(p []byte) (int, error) {
 	return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode < 300 {
+	if statusCode <= http.StatusIMUsed {
 		c.w.Header().Set("Content-Encoding", "gzip")
 	}
 	c.w.WriteHeader(statusCode)
 }
 
-// Close закрывает gzip.Writer и досылает все данные из буфера.
+// Close closes gzip.Writer and send all data from buffer.
 func (c *compressWriter) Close() error {
 	return c.zw.Close()
 }
 
-// compressReader реализует интерфейс io.ReadCloser и позволяет прозрачно для сервера
-// декомпрессировать получаемые от клиента данные
+// compressReader implements the io.ReadCloser interface and makes it transparent to the server
+// decompress data received from the client
 type compressReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader
 }
 
+// newCompressReader return new compressReader pointer and error if exists.
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
@@ -59,10 +62,12 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
+// Read return p bytes from compressReader.
 func (c compressReader) Read(p []byte) (n int, err error) {
 	return c.zr.Read(p)
 }
 
+// Close closes Reader for compressReader.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		return err

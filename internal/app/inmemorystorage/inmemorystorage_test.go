@@ -16,8 +16,8 @@ import (
 
 type TestParams struct {
 	testLogger     *zap.Logger
-	testPrefixAddr string
 	TestStorage    map[string]models.Event
+	testPrefixAddr string
 }
 
 func getParamsForTest() *TestParams {
@@ -65,10 +65,10 @@ func TestGetUserByID(t *testing.T) {
 		ID  int
 	}
 	tests := []struct {
-		name    string
+		want    *models.User
 		fields  fields
 		args    args
-		want    *models.User
+		name    string
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -131,10 +131,10 @@ func TestRegisterUser(t *testing.T) {
 		ctx context.Context
 	}
 	tests := []struct {
-		name    string
+		want    *models.User
 		fields  fields
 		args    args
-		want    *models.User
+		name    string
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -176,7 +176,10 @@ func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.CreateOrGetFromStorageWithoutPointer(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		_, err := m.CreateOrGetFromStorageWithoutPointer(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		if err != nil {
+			return
+		}
 	}
 }
 func BenchmarkCreateOrGetFromStorage(b *testing.B) {
@@ -188,7 +191,10 @@ func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		m.CreateOrGetFromStorage(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		_, err := m.CreateOrGetFromStorage(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		if err != nil {
+			return
+		}
 	}
 }
 

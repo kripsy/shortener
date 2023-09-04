@@ -27,7 +27,7 @@ func main() {
 	long, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 	long = strings.TrimSuffix(long, "\n")
 	// заполняем контейнер данными
@@ -43,7 +43,7 @@ func main() {
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	cb := clientcompress.Compress(string(reqData))
@@ -51,7 +51,7 @@ func main() {
 	request, err := http.NewRequest(http.MethodPost, endpoint, &cb)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	// set headers
@@ -61,7 +61,7 @@ func main() {
 	response, err := client.Do(request)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 	// выводим код ответа
 	fmt.Println("Статус-код ", response.Status)
@@ -70,7 +70,7 @@ func main() {
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	// и печатаем его

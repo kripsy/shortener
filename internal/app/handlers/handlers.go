@@ -1,3 +1,4 @@
+// Package handlers provides handlers for web server.
 package handlers
 
 import (
@@ -31,9 +32,9 @@ type Repository interface {
 }
 
 type APIHandler struct {
+	myLogger   *zap.Logger
 	repository Repository
 	globalURL  string
-	myLogger   *zap.Logger
 }
 
 func APIHandlerInit(repository Repository, globalURL string, myLogger *zap.Logger) (*APIHandler, error) {
@@ -88,7 +89,12 @@ func (h *APIHandler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusCreated)
 	}
-	io.WriteString(w, utils.ReturnURL(val, h.globalURL))
+	_, err = io.WriteString(w, utils.ReturnURL(val, h.globalURL))
+	if err != nil {
+		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error WriteString", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 }
 
 // GetURLHandler — get origin url from storage by shortURL
@@ -120,7 +126,7 @@ func (h *APIHandler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-// SaveURLHandler — save original url, create short url into storage with JSON
+// SaveURLJSONHandler — save original url, create short url into storage with JSON
 func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 	token, _ := utils.GetToken(w, r)
 	userID, _ := auth.GetUserID(token)
@@ -181,7 +187,12 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	}
 
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error Write", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 
 }
 
@@ -268,7 +279,12 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		h.myLogger.Debug("Error CreateOrGetBatchFromStorage", zap.String("error Write", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 }
 
 /*
@@ -313,7 +329,12 @@ func (h *APIHandler) GetBatchURLHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		h.myLogger.Debug("Error GetBatchURLHandler", zap.String("error Write", err.Error()))
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
 }
 
 // PingDBHandler — handler to check success db connection

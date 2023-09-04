@@ -1,3 +1,4 @@
+// Package filestorage provides functionality for working with file storage.
 package filestorage
 
 import (
@@ -15,10 +16,10 @@ import (
 )
 
 type FileStorage struct {
-	memoryStorage map[string]models.Event
-	fileName      string
 	myLogger      *zap.Logger
 	rwmutex       *sync.RWMutex
+	memoryStorage map[string]models.Event
+	fileName      string
 }
 
 func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, error) {
@@ -29,10 +30,10 @@ func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, e
 	rwmutex := &sync.RWMutex{}
 
 	fs := &FileStorage{
-		memoryStorage,
-		fileName,
-		myLogger,
-		rwmutex,
+		memoryStorage: memoryStorage,
+		fileName:      fileName,
+		myLogger:      myLogger,
+		rwmutex:       rwmutex,
 	}
 	err := fs.fillMemoryStorage()
 	if err != nil {

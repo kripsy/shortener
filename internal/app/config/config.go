@@ -1,3 +1,5 @@
+// Package config provides the functionality to collect the general configuration of the project.
+// Config is designed to store URL server, URL prefix for repository, logging level, path for file storage, dsn for database.
 package config
 
 import (
@@ -6,6 +8,7 @@ import (
 	"os"
 )
 
+// RepositoryType represent type of selected storage : inmemory, filestorage, postgresql.
 type RepositoryType int
 
 const (
@@ -14,30 +17,33 @@ const (
 	PostgresDB  RepositoryType = iota
 )
 
+// Config represent settings for service.
 type Config struct {
-	// it's address for exec server
+	// URLServer is an address for exec server.
 	URLServer string
 
-	// it's address for prefix in store short url
+	// URLPrefixRepo is an address for prefix in store short url.
 	URLPrefixRepo string
 
-	// it's logger level
+	// LoggerLevel is a logger level.
 	LoggerLevel string
 
-	// it's file storage path
+	// FileStoragePath is a file storage path.
 	FileStoragePath string
 
-	// it's database conn string
+	// DatabaseDsn is a database conn string.
 	DatabaseDsn string
 
-	// it's field to check type of repo (db, file, rom memory)
+	// RepositoryType is a field to check type of repo (db, file, rom memory).
 	RepositoryType RepositoryType
 }
 
+// InitConfig return a pointer Config.
+// Fields for config are taken from flags, or environment variables.
 func InitConfig() *Config {
 	var repositoryType RepositoryType
 
-	// декларируем наборы флагов для подкоманд
+	// declare set of flags for subcommands.
 	URLServer := flag.String("a", "localhost:8080", "Enter address exec http server as ip_address:port. Or use SERVER_ADDRESS env")
 	URLPrefixRepo := flag.String("b", "http://localhost:8080", "Enter address exec http server as ip_address:port. Or use BASE_URL env")
 	logLevel := flag.String("l", "Info", "log level: Debug, Info, Warn, Error and etc... Or use LOG_LEVEL env")

@@ -1,3 +1,4 @@
+// Package db provides functionality for working with database storage.
 package db
 
 import (
@@ -169,7 +170,11 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 	}
 	mdb.myLogger.Debug("UserID", zap.Int("msg", userID))
 
-	defer tx.Rollback()
+	defer func() {
+		if err = tx.Rollback(); err != nil {
+			mdb.myLogger.Debug("error in rollback", zap.Error(err))
+		}
+	}()
 	query := `INSERT INTO public.urls(id, original_url, short_url, user_id) VALUES ($1, $2, $3, $4);`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
@@ -209,7 +214,11 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 		(*batchURL)[k].OriginalURL = ""
 		(*batchURL)[k].ShortURL = shortURL
 	}
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		mdb.myLogger.Debug("Failed tx.Commit in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return nil, err
+	}
+
 	return batchURL, nil
 }
 
@@ -226,7 +235,11 @@ func (mdb PostgresDB) getNextUserID(ctx context.Context) (int, error) {
 		return -1, err
 	}
 
-	defer tx.Rollback()
+	defer func() {
+		if err = tx.Rollback(); err != nil {
+			mdb.myLogger.Debug("error in rollback", zap.Error(err))
+		}
+	}()
 	query := `SELECT CASE
 			WHEN count(id)<1 THEN 1
 			ELSE max(id)+1
@@ -251,7 +264,10 @@ func (mdb PostgresDB) getNextUserID(ctx context.Context) (int, error) {
 		return -1, err
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		mdb.myLogger.Debug("Failed tx.Commit in CreateOrGetBatchFromStorage", zap.String("msg", err.Error()))
+		return -1, err
+	}
 	return userID, nil
 }
 
@@ -271,7 +287,11 @@ func (mdb PostgresDB) RegisterUser(ctx context.Context) (*models.User, error) {
 		return nil, err
 	}
 
-	defer tx.Rollback()
+	defer func() {
+		if err = tx.Rollback(); err != nil {
+			mdb.myLogger.Debug("error in rollback", zap.Error(err))
+		}
+	}()
 	query := `INSERT INTO users (id) values ($1);`
 	stmt, err := tx.PrepareContext(ctx, query)
 
@@ -287,7 +307,10 @@ func (mdb PostgresDB) RegisterUser(ctx context.Context) (*models.User, error) {
 		mdb.myLogger.Debug("Failed exec ExecContext in RegisterUser", zap.String("msg", err.Error()))
 		return nil, err
 	}
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		mdb.myLogger.Debug("Failed tx.Commit in RegisterUser", zap.String("msg", err.Error()))
+		return nil, err
+	}
 
 	return &models.User{
 		ID: newUserID,
@@ -302,7 +325,11 @@ func (mdb PostgresDB) GetBatchURLFromStorage(ctx context.Context, userID int) (*
 		mdb.myLogger.Debug("Failed to Begin Tx in GetBatchURLFromStorage", zap.String("msg", err.Error()))
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err = tx.Rollback(); err != nil {
+			mdb.myLogger.Debug("error in rollback", zap.Error(err))
+		}
+	}()
 
 	query := `SELECT short_url, original_url from urls where user_id = $1`
 
@@ -355,7 +382,11 @@ func (mdb PostgresDB) DeleteSliceURLFromStorage(ctx context.Context, shortURL []
 		return err
 	}
 
-	defer tx.Rollback()
+	defer func() {
+		if err = tx.Rollback(); err != nil {
+			mdb.myLogger.Debug("error in rollback", zap.Error(err))
+		}
+	}()
 
 	urls := squirrel.Update("urls").
 		Set("is_deleted", true).
@@ -377,7 +408,10 @@ func (mdb PostgresDB) DeleteSliceURLFromStorage(ctx context.Context, shortURL []
 		return err
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		mdb.myLogger.Debug("Failed tx.Commit in DeleteSliceURLFromStorage", zap.String("msg", err.Error()))
+		return err
+	}
 	mdb.myLogger.Debug("Success commit DeleteSliceURLFromStorage")
 	return nil
 }
