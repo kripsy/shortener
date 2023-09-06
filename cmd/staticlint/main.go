@@ -3,7 +3,7 @@ package main
 
 import (
 	"go/ast"
-	"strings"
+	"regexp"
 
 	"github.com/gostaticanalysis/emptycase"
 	"github.com/masibw/goone"
@@ -82,9 +82,8 @@ func main() {
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
-
 	for _, file := range pass.Files {
-		if strings.Contains(pass.Fset.Position(file.Pos()).Filename, "/Library/Caches/go-build/") {
+		if shouldSkipFile(file) {
 			continue
 		}
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -109,6 +108,19 @@ func exitChecker(pass *analysis.Pass, x *ast.CallExpr) bool {
 						return true
 					}
 				}
+			}
+		}
+	}
+	return false
+}
+
+var generatedCodeRegexp = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\\.$`)
+
+func shouldSkipFile(file *ast.File) bool {
+	for _, cg := range file.Comments {
+		for _, comment := range cg.List {
+			if generatedCodeRegexp.MatchString(comment.Text) {
+				return true
 			}
 		}
 	}
