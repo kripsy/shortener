@@ -184,8 +184,8 @@ func (mdb PostgresDB) CreateOrGetBatchFromStorage(ctx context.Context, batchURL 
 	defer stmt.Close()
 
 	for k, v := range *batchURL {
-		fmt.Println(v.OriginalURL)
-		shortURL, err := mdb.isOriginalURLExist(ctx, v.OriginalURL)
+		var shortURL string
+		shortURL, err = mdb.isOriginalURLExist(ctx, v.OriginalURL)
 
 		if err != nil {
 			mdb.myLogger.Debug("Failed to check if url exist", zap.String("msg", err.Error()))

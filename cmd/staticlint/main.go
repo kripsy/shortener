@@ -114,7 +114,7 @@ func exitChecker(pass *analysis.Pass, x *ast.CallExpr) bool {
 	return false
 }
 
-var generatedCodeRegexp = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\\.$`)
+var generatedCodeRegexp = regexp.MustCompile("^// Code generated .* DO NOT EDIT")
 
 func shouldSkipFile(file *ast.File) bool {
 	for _, cg := range file.Comments {

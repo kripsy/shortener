@@ -52,7 +52,7 @@ func main() {
 		return
 	}
 	defer func() { // flushes buffer, if any
-		if err := application.GetAppLogger().Sync(); err != nil {
+		if err = application.GetAppLogger().Sync(); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return
 		}
