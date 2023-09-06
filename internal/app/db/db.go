@@ -91,6 +91,7 @@ func (mdb PostgresDB) Ping() error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
+
 	return nil
 }
 

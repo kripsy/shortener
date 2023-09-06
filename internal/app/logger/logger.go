@@ -8,6 +8,7 @@ import (
 )
 
 func InitLog(level string) (*zap.Logger, error) {
+	// level = "Debug"
 	lvl, err := zap.ParseAtomicLevel(level)
 
 	if err != nil {

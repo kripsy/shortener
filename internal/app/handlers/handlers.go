@@ -150,6 +150,7 @@ func (h *APIHandler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) 
 
 	var payload URLRequestType
 	body, err := io.ReadAll(r.Body)
+
 	if err != nil {
 		h.myLogger.Debug("Empty body")
 		http.Error(w, "", http.StatusInternalServerError)

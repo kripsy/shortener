@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 )
@@ -29,12 +28,8 @@ func (c *compressWriter) Header() http.Header {
 
 // Write call method Write of gzip writer.
 func (c *compressWriter) Write(p []byte) (int, error) {
-	n, err := c.zw.Write(p)
-	if err != nil {
-		return n, fmt.Errorf("%w", err)
-	}
-
-	return n, nil
+	//nolint:wrapcheck
+	return c.zw.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
@@ -46,11 +41,8 @@ func (c *compressWriter) WriteHeader(statusCode int) {
 
 // Close closes gzip.Writer and send all data from buffer.
 func (c *compressWriter) Close() error {
-	if err := c.zw.Close(); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	return nil
+	//nolint:wrapcheck
+	return c.zw.Close()
 }
 
 // compressReader implements the io.ReadCloser interface and makes it transparent to the server
@@ -64,7 +56,8 @@ type compressReader struct {
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		//nolint:wrapcheck
+		return nil, err
 	}
 
 	return &compressReader{
@@ -74,22 +67,17 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 }
 
 // Read return p bytes from compressReader.
-//
-//nolint:nonamedreturns
-func (c compressReader) Read(p []byte) (n int, err error) {
-	n, err = c.zr.Read(p)
-	if err != nil {
-		return n, fmt.Errorf("%w", err)
-	}
-
-	return n, nil
+func (c compressReader) Read(p []byte) (int, error) {
+	//nolint:wrapcheck
+	return c.zr.Read(p)
 }
 
 // Close closes Reader for compressReader.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
-		return fmt.Errorf("%w", err)
+		//nolint:wrapcheck
+		return err
 	}
-
-	return nil
+	//nolint:wrapcheck
+	return c.zr.Close()
 }

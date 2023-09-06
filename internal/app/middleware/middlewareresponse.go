@@ -26,6 +26,7 @@ func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	if err != nil {
 		return size, fmt.Errorf("%w", err)
 	}
+
 	return size, nil
 }
 
