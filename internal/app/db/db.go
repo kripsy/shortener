@@ -88,8 +88,10 @@ func RunMigrations(_ context.Context, connString string, _ *zap.Logger) error {
 
 func (mdb PostgresDB) Ping() error {
 	err := mdb.DB.Ping()
-
-	return fmt.Errorf("%w", err)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }
 
 func (mdb PostgresDB) Close() {
