@@ -25,6 +25,7 @@ func NewEvent(shortURL, originalURL string, userID int) *Event {
 		OriginalURL: originalURL,
 		UserID:      userID,
 	}
+
 	return e
 }
 

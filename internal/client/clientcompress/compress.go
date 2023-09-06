@@ -17,9 +17,10 @@ func Compress(data string) bytes.Buffer {
 		log.Fatal(err)
 	}
 
-	if err := zw.Close(); err != nil {
+	if err = zw.Close(); err != nil {
 		log.Fatal(err)
 	}
+
 	return buf
 }
 
@@ -31,5 +32,6 @@ func Decompress(data string) string {
 		log.Fatal(err)
 	}
 	s, _ := io.ReadAll(r)
+
 	return (string(s))
 }

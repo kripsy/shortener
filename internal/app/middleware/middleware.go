@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/handlers"
 	"go.uber.org/zap"
 )
@@ -19,13 +20,13 @@ func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository) *MyMiddlew
 		MyLogger: myLogger,
 		repo:     repo,
 	}
+
 	return m
 }
 
 // RequestLogger — middleware-логер для входящих HTTP-запросов.
 func (m *MyMiddleware) RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		// start duration work of handler
 		start := time.Now()
 
@@ -60,6 +61,7 @@ func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 		if r.Header.Get("Content-Encoding") != "gzip" {
 			m.MyLogger.Debug("continue without compress")
 			next.ServeHTTP(ow, r)
+
 			return
 		}
 		m.MyLogger.Debug("continue with compress")
@@ -79,6 +81,7 @@ func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
+
 				return
 			}
 			// меняем тело запроса на новое

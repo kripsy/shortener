@@ -1,4 +1,4 @@
-// Package utils provides the helpfull functionality for shortener.
+// Package utils provides the helpful functionality for shortener.
 package utils
 
 import (
@@ -8,18 +8,20 @@ import (
 	"net/http"
 	"strings"
 
+	//nolint:depguard
 	"github.com/pkg/errors"
 )
 
 // CreateShortURL returns random short URL, consist 5 bytes (Why not?).
 // If we have same error, it returns empty string and error.
 func CreateShortURL() (string, error) {
-
-	buf := make([]byte, 5)
+	reqLen := 5
+	buf := make([]byte, reqLen)
 	_, err := rand.Read(buf)
 
 	if err != nil {
-		return "", fmt.Errorf("error while generating random string: %s", err)
+		//nolint:goerr113,nolintlint
+		return "", fmt.Errorf("error while generating random string: %w", err)
 	}
 
 	return fmt.Sprintf("%x", buf), nil
@@ -29,11 +31,13 @@ func CreateShortURL() (string, error) {
 // It's optimized version of CreateShortURL.
 // If we have same error, it returns empty string and error.
 func CreateShortURLWithoutFmt() (string, error) {
-	buf := make([]byte, 5)
+	reqLen := 5
+	buf := make([]byte, reqLen)
 	_, err := rand.Read(buf)
 
 	if err != nil {
-		return "", fmt.Errorf("error while generating random string: %s", err)
+		//nolint:goerr113,nolintlint
+		return "", fmt.Errorf("error while generating random string: %w", err)
 	}
 
 	return hex.EncodeToString(buf), nil
@@ -51,30 +55,35 @@ func StingContains(arrayString []string, searchString string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 // GetTokenFromBearer returns token from header.
 // Header should start from "Baerer ", otherwise return empty string and error.
 func GetTokenFromBearer(bearerString string) (string, error) {
+	reqLen := 2
 	splitString := strings.Split(bearerString, "Bearer ")
 	fmt.Printf("len splitString %d\n", len(splitString))
-	if len(splitString) < 2 {
+	if len(splitString) < reqLen {
 		fmt.Printf("bearer string not valid")
+		//nolint:goerr113
 		return "", fmt.Errorf("bearer string not valid")
 	}
 	tokenString := splitString[1]
 	if tokenString == "" {
 		fmt.Printf("tokenString is empty")
+
+		//nolint:goerr113
 		return "", fmt.Errorf("tokenString is empty")
 	}
+
 	return tokenString, nil
 }
 
 // GetToken returns token from header or cookie.
 // Header should start from "Baerer ", otherwise return empty string and error.
-// BUG(Evgeniy): param w is not usefull. In future i'll refactore it.
-func GetToken(w http.ResponseWriter, r *http.Request) (string, error) {
+func GetToken(r *http.Request) (string, error) {
 	var token string
 
 	tokenString := r.Header.Get("Authorization")
@@ -96,6 +105,6 @@ func GetToken(w http.ResponseWriter, r *http.Request) (string, error) {
 	if token != "" {
 		return token, nil
 	}
+	//nolint:goerr113
 	return "", fmt.Errorf("token not found")
-
 }

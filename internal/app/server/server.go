@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	//nolint:depguard
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/handlers"
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/middleware"
 )
 
@@ -20,16 +23,16 @@ type MyServer struct {
 	URLRepo  string
 }
 
-func InitServer(URLRepo string, repo handlers.Repository, myLogger *zap.Logger) (*MyServer, error) {
+func InitServer(urlRepo string, repo handlers.Repository, myLogger *zap.Logger) (*MyServer, error) {
 	m := &MyServer{
 		Router:   chi.NewRouter(),
 		MyLogger: myLogger,
-		URLRepo:  URLRepo,
+		URLRepo:  urlRepo,
 	}
 
 	ht, err := handlers.APIHandlerInit(repo, m.URLRepo, m.MyLogger)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 	myMiddleware := middleware.InitMyMiddleware(m.MyLogger, repo)
 
@@ -62,7 +65,7 @@ func InitServer(URLRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 }
 
 // Replicated from expvar.go as not public.
-func expVars(w http.ResponseWriter, r *http.Request) {
+func expVars(w http.ResponseWriter, _ *http.Request) {
 	first := true
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, "{\n")

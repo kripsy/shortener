@@ -1,3 +1,4 @@
+//nolint:testpackage
 package handlers
 
 import (
@@ -19,12 +20,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// t.Setenv("SERVER_ADDRESS", "localhost:8080")
-// t.Setenv("BASE_URL", "http://localhost:8080")
-// t.Setenv("LOG_LEVEL", "Info")
-// t.Setenv("DATABASE_DSN", "")
-// t.Setenv("FILE_STORAGE_PATH", "")
-// envPrefixAddr := os.Getenv("BASE_URL")
 type TestParams struct {
 	testLogger     *zap.Logger
 	testPrefixAddr string
@@ -37,13 +32,12 @@ func getParamsForTest() *TestParams {
 		testLogger:     tl,
 		testPrefixAddr: "http://localhost:8080",
 	}
+
 	return tp
 }
 
 func TestSaveURLHandler(t *testing.T) {
-
 	paramTest := getParamsForTest()
-
 	type want struct {
 		contentType string
 		statusCode  int
@@ -55,7 +49,6 @@ func TestSaveURLHandler(t *testing.T) {
 		methodType string
 		want       want
 	}{
-		// TODO: Add test cases.
 		{
 			name:       "First success save originalUrl",
 			methodType: http.MethodPost,
@@ -93,7 +86,7 @@ func TestSaveURLHandler(t *testing.T) {
 			result := w.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			if result.StatusCode == 201 {
+			if result.StatusCode == http.StatusCreated {
 				assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
 				shortURL, err := io.ReadAll(result.Body)
 				require.NoError(t, err)
@@ -121,7 +114,6 @@ func TestGetURLHandler(t *testing.T) {
 		methodType string
 		want       want
 	}{
-		// TODO: Add test cases.
 		{
 			name:       "Success get originalUrl",
 			request:    "/82643f4619",
@@ -147,6 +139,7 @@ func TestGetURLHandler(t *testing.T) {
 
 			mdb := mocks.NewMockRepository(ctrl)
 			mdb.EXPECT().GetOriginalURLFromStorage(gomock.Any(), "82643f4619").Return("https://google.com/", nil).AnyTimes()
+			//nolint:goerr113
 			mdb.EXPECT().GetOriginalURLFromStorage(gomock.Any(), "82643f4610").Return("", errors.New("1")).AnyTimes()
 
 			body := strings.NewReader(tt.body)
@@ -186,7 +179,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 		want want
 	}{
 		{
-			// TODO: Add test cases.
+			//
 			name:        "First success save originalUrl",
 			request:     "/",
 			methodType:  http.MethodPost,
@@ -199,7 +192,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			},
 		},
 		{
-			// TODO: Add test cases.
+			//
 			name:        "Bad content-type",
 			request:     "/",
 			methodType:  http.MethodPost,
@@ -236,7 +229,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			err = result.Body.Close()
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			if result.StatusCode != 201 {
+			if result.StatusCode != http.StatusCreated {
 				return
 			}
 
@@ -246,7 +239,6 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.NotEmpty(t, resp.Result, "Orig URL is empty, but except not empty")
-
 		})
 	}
 }
@@ -267,9 +259,8 @@ func TestPingDBHandler(t *testing.T) {
 		success     bool
 		want        want
 	}{
-		// TODO: Add test cases.
 		{
-			// TODO: Add test cases.
+			//
 			name:        "First success ping",
 			request:     "/ping",
 			methodType:  http.MethodGet,
@@ -280,7 +271,7 @@ func TestPingDBHandler(t *testing.T) {
 			},
 		},
 		{
-			// TODO: Add test cases.
+			//
 			name:        "First failed ping",
 			request:     "/ping",
 			methodType:  http.MethodGet,
@@ -301,6 +292,7 @@ func TestPingDBHandler(t *testing.T) {
 			if tt.success {
 				mdb.EXPECT().Ping().Return(nil).AnyTimes()
 			} else {
+				//nolint:goerr113
 				mdb.EXPECT().Ping().Return(errors.New("test")).AnyTimes()
 			}
 
@@ -336,9 +328,8 @@ func TestSaveBatchURLHandler(t *testing.T) {
 		contentType string
 		want        want
 	}{
-		// TODO: Add test cases.
 		{
-			// TODO: Add test cases.
+			//
 			name:       "First success save originalUrl",
 			request:    "/",
 			methodType: http.MethodPost,
@@ -386,7 +377,7 @@ func TestSaveBatchURLHandler(t *testing.T) {
 			fmt.Println(valueOutput)
 
 			mdb.EXPECT().CreateOrGetBatchFromStorage(gomock.Any(), valueInut, gomock.Any()).Return(valueOutput, nil).AnyTimes()
-
+			//nolint:noctx
 			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
 			assert.NoError(t, err)
 
@@ -428,9 +419,8 @@ func TestDeleteBatchURLHandler(t *testing.T) {
 		contentType string
 		want        want
 	}{
-		// TODO: Add test cases.
 		{
-			// TODO: Add test cases.
+			//
 			name:        "First success delete urls",
 			request:     "/",
 			methodType:  http.MethodDelete,
@@ -462,6 +452,7 @@ func TestDeleteBatchURLHandler(t *testing.T) {
 
 			mdb := mocks.NewMockRepository(ctrl)
 			mdb.EXPECT().DeleteSliceURLFromStorage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			//nolint:noctx
 			request, err := http.NewRequest(tt.methodType, tt.request, strings.NewReader(tt.body))
 			assert.NoError(t, err)
 

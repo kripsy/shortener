@@ -1,3 +1,4 @@
+//nolint:testpackage
 package inmemorystorage
 
 import (
@@ -50,6 +51,7 @@ func getParamsForTest() *TestParams {
 			},
 		},
 	}
+
 	return tp
 }
 
@@ -61,6 +63,7 @@ func TestGetUserByID(t *testing.T) {
 		myLogger *zap.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx context.Context
 		ID  int
 	}
@@ -71,7 +74,6 @@ func TestGetUserByID(t *testing.T) {
 		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "first success getting user",
 			fields: fields{
@@ -111,6 +113,7 @@ func TestGetUserByID(t *testing.T) {
 			got, err := m.GetUserByID(tt.args.ctx, tt.args.ID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.GetUserByID() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
@@ -128,6 +131,7 @@ func TestRegisterUser(t *testing.T) {
 		myLogger *zap.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx context.Context
 	}
 	tests := []struct {
@@ -137,7 +141,6 @@ func TestRegisterUser(t *testing.T) {
 		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "first success register user",
 			fields: fields{
@@ -160,6 +163,7 @@ func TestRegisterUser(t *testing.T) {
 			got, err := m.RegisterUser(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.RegisterUser() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			assert.NotEmpty(t, got)
@@ -212,7 +216,7 @@ func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 // 	}
 // }
 
-// GenerateEvents создает множество событий Event
+// GenerateEvents создает множество событий Event.
 func GenerateEvents(count int) models.BatchURL {
 	events := make(models.BatchURL, count)
 
@@ -222,15 +226,16 @@ func GenerateEvents(count int) models.BatchURL {
 			ShortURL:      "",
 			OriginalURL:   fmt.Sprintf("http://example.com/%d", i+1),
 			CorrelationID: fmt.Sprintf("correlation_id_%d", i+1),
-			UserID:        rand.Intn(100) + 1, // Произвольный UserID в диапазоне от 1 до 100
-			IsDeleted:     false,
+			//nolint:gosec
+			UserID:    rand.Intn(100) + 1, // Произвольный UserID в диапазоне от 1 до 100
+			IsDeleted: false,
 		}
 	}
 
 	return events
 }
 
-// GenerateEvents создает множество событий Event
+// GenerateURL geneterate new url.
 func GenerateURL(count int) string {
 	return fmt.Sprintf("http://example.com/%d", count+1)
 }

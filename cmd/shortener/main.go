@@ -7,15 +7,20 @@ import (
 	"os"
 	"text/template"
 
+	//nolint:gosec
 	_ "net/http/pprof"
 
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/application"
 )
 
 var (
+	//nolint:gochecknoglobals
 	buildVersion string
-	buildDate    string
-	buildCommit  string
+	//nolint:gochecknoglobals
+	buildDate string
+	//nolint:gochecknoglobals
+	buildCommit string
 )
 
 type BuildData struct {
@@ -35,6 +40,7 @@ func main() {
 	application, err := application.NewApp(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 
@@ -49,11 +55,13 @@ func main() {
 	err = t.Execute(os.Stdout, *d)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 	defer func() { // flushes buffer, if any
 		if err = application.GetAppLogger().Sync(); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 			return
 		}
 	}()
@@ -63,9 +71,11 @@ func main() {
 	fmt.Printf("SERVER_ADDRESS: %s\n", application.GetAppConfig().URLServer)
 	fmt.Printf("BASE_URL: %s\n", application.GetAppConfig().URLPrefixRepo)
 
+	//nolint:gosec
 	err = http.ListenAndServe(application.GetAppConfig().URLServer, application.GetAppServer().Router)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 }

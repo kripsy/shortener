@@ -33,7 +33,6 @@ import (
 )
 
 func main() {
-
 	var exitCheckAnalyzer = &analysis.Analyzer{
 		Name: "exitcheck",
 		Doc:  "check for exit",
@@ -69,9 +68,7 @@ func main() {
 	}
 
 	for _, v := range stylecheck.Analyzers {
-
 		mychecks = append(mychecks, v.Analyzer)
-
 	}
 	mychecks = append(mychecks, emptycase.Analyzer) // check empty case body
 
@@ -82,35 +79,37 @@ func main() {
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
+	var err error
 	for _, file := range pass.Files {
 		if shouldSkipFile(file) {
 			continue
 		}
 		ast.Inspect(file, func(n ast.Node) bool {
-			switch x := n.(type) {
-			case *ast.CallExpr:
+			if x, ok := n.(*ast.CallExpr); ok {
 				if exitChecker(pass, x) {
 					pass.Reportf(x.Pos(), "direct call to os.Exit found in main function of main package")
 				}
 			}
+
 			return true
 		})
 	}
-	return nil, nil
+
+	return nil, err
 }
 
 func exitChecker(pass *analysis.Pass, x *ast.CallExpr) bool {
 	if selExpr, ok := x.Fun.(*ast.SelectorExpr); ok {
-		if idExpr, ok := selExpr.X.(*ast.Ident); ok && idExpr.Name == "os" && selExpr.Sel.Name == "Exit" {
-			if pass.Pkg.Name() == "main" {
-				for _, f := range pass.Files {
-					if f.Name.Name == "main" {
-						return true
-					}
+		//nolint:lll
+		if idExpr, ok := selExpr.X.(*ast.Ident); ok && idExpr.Name == "os" && selExpr.Sel.Name == "Exit" && pass.Pkg.Name() == "main" {
+			for _, f := range pass.Files {
+				if f.Name.Name == "main" {
+					return true
 				}
 			}
 		}
 	}
+
 	return false
 }
 
@@ -124,5 +123,6 @@ func shouldSkipFile(file *ast.File) bool {
 			}
 		}
 	}
+
 	return false
 }

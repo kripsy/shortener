@@ -14,7 +14,6 @@ func NewUniqueError(fieldName string, err error) error {
 		Text: fmt.Sprintf("%v already exists", fieldName),
 		Err:  err,
 	}
-
 }
 
 // Error to meet error intefrace by UniqueError.

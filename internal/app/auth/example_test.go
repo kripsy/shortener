@@ -1,3 +1,4 @@
+//nolint:testpackage
 package auth
 
 import (
@@ -5,6 +6,7 @@ import (
 	"log"
 )
 
+//nolint:testableexamples
 func ExampleBuildJWTString() {
 	// Suppose we have user id 123
 	userID := 123
@@ -16,15 +18,16 @@ func ExampleBuildJWTString() {
 	}
 
 	fmt.Println("Generated JWT token:", tokenString)
-
 }
 
+//nolint:testableexamples,nolintlint
 func ExampleGetUserID() {
 	// To demonstrate, first create a token using the BuildJWTString function
 	userID := 12345
 	tokenString, err := BuildJWTString(userID)
 	if err != nil {
 		fmt.Println("Error creating JWT:", err)
+
 		return
 	}
 
@@ -32,6 +35,7 @@ func ExampleGetUserID() {
 	extractedUserID, err := GetUserID(tokenString)
 	if err != nil {
 		fmt.Println("Error extracting userID:", err)
+
 		return
 	}
 
@@ -39,12 +43,14 @@ func ExampleGetUserID() {
 	// Output: Extracted UserID: 12345
 }
 
+//nolint:testableexamples,nolintlint
 func ExampleGetExpires() {
 	// To demonstrate, first create a token using the BuildJWTString function
 	userID := 12345
 	tokenString, err := BuildJWTString(userID)
 	if err != nil {
 		fmt.Println("Error creating JWT:", err)
+
 		return
 	}
 
@@ -52,11 +58,11 @@ func ExampleGetExpires() {
 	expirationTime, err := GetExpires(tokenString)
 	if err != nil {
 		fmt.Println("Error extracting expiration time:", err)
+
 		return
 	}
 
 	fmt.Println("Token expires at:", expirationTime)
-
 }
 
 func ExampleIsTokenValid() {
@@ -65,6 +71,7 @@ func ExampleIsTokenValid() {
 	tokenString, err := BuildJWTString(userID)
 	if err != nil {
 		fmt.Println("Error creating JWT:", err)
+
 		return
 	}
 
@@ -72,6 +79,7 @@ func ExampleIsTokenValid() {
 	isValid, err := IsTokenValid(tokenString)
 	if err != nil {
 		fmt.Println("Error checking token validity:", err)
+
 		return
 	}
 
