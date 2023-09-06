@@ -106,4 +106,4 @@ go tool pprof -http=":9091" ./result.pprof
 ```
 
 # Run with tags
-go run -ldflags "-X main.buildVersion=1.0 -X main.buildDate=2023/09/05 -X main.buildCommit=asdfg" ./cmd/shortener/main.go -l "Debug"
+go run -ldflags "-X main.buildVersion=1.0 -X 'main.buildDate=$(date '+%Y-%m-%d %H:%M:%S')' -X main.buildCommit=$(git rev-parse HEAD)" ./cmd/shortener/main.go -l "Debug"
