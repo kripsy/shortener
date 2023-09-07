@@ -1,3 +1,4 @@
+// Package filestorage provides functionality for working with file storage.
 package filestorage
 
 import (
@@ -6,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/kripsy/shortener/internal/app/models"
@@ -13,27 +15,34 @@ import (
 	"go.uber.org/zap"
 )
 
+const FileRule = 0666
+
 type FileStorage struct {
+	myLogger      *zap.Logger
+	rwmutex       *sync.RWMutex
 	memoryStorage map[string]models.Event
 	fileName      string
-	myLogger      *zap.Logger
 }
 
 func InitFileStorageFile(fileName string, myLogger *zap.Logger) (*FileStorage, error) {
 	if fileName == "" {
+		//nolint:goerr113
 		return nil, errors.New("fileName is empty")
 	}
 	memoryStorage := map[string]models.Event{}
+	rwmutex := &sync.RWMutex{}
 
 	fs := &FileStorage{
-		memoryStorage,
-		fileName,
-		myLogger,
+		memoryStorage: memoryStorage,
+		fileName:      fileName,
+		myLogger:      myLogger,
+		rwmutex:       rwmutex,
 	}
 	err := fs.fillMemoryStorage()
 	if err != nil {
 		return nil, err
 	}
+
 	return fs, nil
 }
 
@@ -41,11 +50,15 @@ func (fs *FileStorage) fillMemoryStorage() error {
 	events, err := fs.readEventsFromFile()
 	if err != nil {
 		fs.myLogger.Warn("error fillMemoryStorage", zap.String("msg", err.Error()))
-		return err
+
+		return fmt.Errorf("%w", err)
 	}
+	fs.rwmutex.Lock()
+	defer fs.rwmutex.Unlock()
 	for _, event := range events {
 		fs.memoryStorage[event.OriginalURL] = event
 	}
+
 	return nil
 }
 
@@ -55,11 +68,12 @@ type Producer struct {
 }
 
 func NewProducer(fileName string, myLogger *zap.Logger) (*Producer, error) {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, FileRule)
 	if err != nil {
 		myLogger.Warn("errror create file to producer")
 		fmt.Println(err)
-		return nil, err
+
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	p := &Producer{
@@ -71,11 +85,19 @@ func NewProducer(fileName string, myLogger *zap.Logger) (*Producer, error) {
 }
 
 func (p *Producer) WriteEvent(event models.Event) error {
-	return p.encoder.Encode(event)
+	if err := p.encoder.Encode(event); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 func (p *Producer) Close() error {
-	return p.file.Close()
+	if err := p.file.Close(); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
 type Consumer struct {
@@ -84,10 +106,11 @@ type Consumer struct {
 }
 
 func NewConsumer(fileName string, myLogger *zap.Logger) (*Consumer, error) {
-	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0666)
+	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, FileRule)
 	if err != nil {
 		myLogger.Warn("errror create file to consumer", zap.String("msg", err.Error()))
-		return nil, err
+
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	c := &Consumer{
@@ -100,40 +123,48 @@ func NewConsumer(fileName string, myLogger *zap.Logger) (*Consumer, error) {
 
 func (c *Consumer) ReadEvent() (*models.Event, error) {
 	event := &models.Event{}
-
 	if err := c.decoder.Decode(&event); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
+
 	return event, nil
 }
 
 func (c *Consumer) Close() error {
-	return c.file.Close()
+	if err := c.file.Close(); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	return nil
 }
 
-func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, userID int) (string, error) {
-
+func (fs *FileStorage) CreateOrGetFromStorage(_ context.Context, url string, userID int) (string, error) {
+	fs.rwmutex.Lock()
+	defer fs.rwmutex.Unlock()
 	for originalURL, event := range fs.memoryStorage {
 		if originalURL == url {
 			return event.ShortURL, nil
 		}
 	}
 
-	shortURL, err := utils.CreateShortURL()
+	// shortURL, err := utils.CreateShortURL()
+	shortURL, err := utils.CreateShortURLWithoutFmt()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
 	event := models.NewEvent(shortURL, url, userID)
 	Producer, err := NewProducer(fs.fileName, fs.myLogger)
 	if err != nil {
 		fs.myLogger.Error("cannot create producer")
-		return "", err
+
+		return "", fmt.Errorf("%w", err)
 	}
 	defer Producer.Close()
 
 	if err = Producer.WriteEvent(*event); err != nil {
 		fs.myLogger.Error("error write event", zap.String("msg", err.Error()))
-		return "", err
+
+		return "", fmt.Errorf("%w", err)
 	}
 
 	fs.memoryStorage[url] = *event
@@ -141,21 +172,24 @@ func (fs *FileStorage) CreateOrGetFromStorage(ctx context.Context, url string, u
 	return shortURL, nil
 }
 
-func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL string) (string, error) { //([]models.Event, error)
-
+func (fs *FileStorage) GetOriginalURLFromStorage(_ context.Context, shortURL string) (string, error) {
+	fs.rwmutex.RLock()
+	defer fs.rwmutex.RUnlock()
 	var val string
 	ok := false
 	// for every key from MYMEMORY check our shortURL. If exist set `val = k` and `ok = true`
 
 	for k, v := range fs.memoryStorage {
-		if v.ShortURL == string(shortURL) {
+		if v.ShortURL == shortURL {
 			ok = true
 			val = k
+
 			break
 		}
 	}
 	if !ok {
 		// key not exist
+		//nolint:goerr113
 		return "", fmt.Errorf("not exists")
 	}
 	// If the key exists
@@ -163,10 +197,13 @@ func (fs *FileStorage) GetOriginalURLFromStorage(ctx context.Context, shortURL s
 }
 
 func (fs *FileStorage) readEventsFromFile() ([]models.Event, error) {
+	fs.rwmutex.RLock()
+	defer fs.rwmutex.RUnlock()
 	Consumer, err := NewConsumer(fs.fileName, fs.myLogger)
 	events := []models.Event{}
 	if err != nil {
 		fs.myLogger.Error("cannot create Consumer")
+
 		return nil, err
 	}
 	var event *models.Event
@@ -190,49 +227,56 @@ func (fs *FileStorage) Ping() error {
 	return nil
 }
 
-func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context, batchURL *models.BatchURL, userID int) (*models.BatchURL, error) {
+func (fs *FileStorage) CreateOrGetBatchFromStorage(ctx context.Context,
+	batchURL *models.BatchURL,
+	userID int) (*models.BatchURL, error) {
 	fs.myLogger.Debug("Start CreateOrGetBatchFromStorage")
 	for k, v := range *batchURL {
-		shortURL, err := fs.CreateOrGetFromStorage(context.Background(), v.OriginalURL, userID)
+		shortURL, err := fs.CreateOrGetFromStorage(ctx, v.OriginalURL, userID)
 		if err != nil {
 			return nil, err
 		}
 		(*batchURL)[k].ShortURL = shortURL
 		(*batchURL)[k].OriginalURL = ""
 	}
+
 	return batchURL, nil
 }
 
-func (fs *FileStorage) GetUserByID(ctx context.Context, ID int) (*models.User, error) {
+func (fs *FileStorage) GetUserByID(_ context.Context, id int) (*models.User, error) {
 	events, err := fs.readEventsFromFile()
 	if err != nil {
 		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
+
 		return nil, err
 	}
 	for _, v := range events {
-		if v.UserID == ID {
+		if v.UserID == id {
 			return &models.User{
 				ID: v.UserID,
 			}, nil
 		}
 	}
+	//nolint:goerr113
 	return nil, fmt.Errorf("user not found")
 }
 
-func (fs *FileStorage) RegisterUser(ctx context.Context) (*models.User, error) {
+func (fs *FileStorage) RegisterUser(_ context.Context) (*models.User, error) {
 	return &models.User{
 		ID: int(uuid.New().ID()),
 	}, nil
 }
 
-func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error) {
+func (fs *FileStorage) GetBatchURLFromStorage(_ context.Context, userID int) (*models.BatchURL, error) {
 	batchURL := &models.BatchURL{}
 	events, err := fs.readEventsFromFile()
 	if err != nil {
 		fs.myLogger.Debug("Error read events", zap.String("msg", err.Error()))
-		return nil, err
+
+		return nil, fmt.Errorf("%w", err)
 	}
 	for _, v := range events {
+		//nolint:exhaustruct
 		if v.UserID == userID {
 			event := &models.Event{
 				ShortURL:    v.ShortURL,
@@ -241,10 +285,11 @@ func (fs *FileStorage) GetBatchURLFromStorage(ctx context.Context, userID int) (
 			*batchURL = append(*batchURL, *event)
 		}
 	}
+
 	return batchURL, nil
 }
 
-func (fs *FileStorage) DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error {
+func (fs *FileStorage) DeleteSliceURLFromStorage(_ context.Context, _ []string, _ int) error {
 	fmt.Println("Not implemented yet")
 
 	return nil

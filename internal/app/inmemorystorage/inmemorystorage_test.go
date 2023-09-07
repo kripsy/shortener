@@ -1,8 +1,12 @@
+//nolint:testpackage
 package inmemorystorage
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/kripsy/shortener/internal/app/logger"
@@ -13,8 +17,8 @@ import (
 
 type TestParams struct {
 	testLogger     *zap.Logger
-	testPrefixAddr string
 	TestStorage    map[string]models.Event
+	testPrefixAddr string
 }
 
 func getParamsForTest() *TestParams {
@@ -47,6 +51,7 @@ func getParamsForTest() *TestParams {
 			},
 		},
 	}
+
 	return tp
 }
 
@@ -58,17 +63,17 @@ func TestGetUserByID(t *testing.T) {
 		myLogger *zap.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx context.Context
 		ID  int
 	}
 	tests := []struct {
-		name    string
+		want    *models.User
 		fields  fields
 		args    args
-		want    *models.User
+		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "first success getting user",
 			fields: fields{
@@ -103,10 +108,12 @@ func TestGetUserByID(t *testing.T) {
 			m := InMemoryStorage{
 				storage:  tt.fields.storage,
 				myLogger: tt.fields.myLogger,
+				rwmutex:  &sync.RWMutex{},
 			}
 			got, err := m.GetUserByID(tt.args.ctx, tt.args.ID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.GetUserByID() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
@@ -124,16 +131,16 @@ func TestRegisterUser(t *testing.T) {
 		myLogger *zap.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx context.Context
 	}
 	tests := []struct {
-		name    string
+		want    *models.User
 		fields  fields
 		args    args
-		want    *models.User
+		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "first success register user",
 			fields: fields{
@@ -151,13 +158,84 @@ func TestRegisterUser(t *testing.T) {
 			m := InMemoryStorage{
 				storage:  tt.fields.storage,
 				myLogger: tt.fields.myLogger,
+				rwmutex:  &sync.RWMutex{},
 			}
 			got, err := m.RegisterUser(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.RegisterUser() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			assert.NotEmpty(t, got)
 		})
 	}
+}
+
+func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
+	paramTest := getParamsForTest()
+	m := InMemoryStorage{
+		storage:  paramTest.TestStorage,
+		myLogger: paramTest.testLogger,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := m.CreateOrGetFromStorageWithoutPointer(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		if err != nil {
+			return
+		}
+	}
+}
+func BenchmarkCreateOrGetFromStorage(b *testing.B) {
+	paramTest := getParamsForTest()
+	m := InMemoryStorage{
+		storage:  paramTest.TestStorage,
+		myLogger: paramTest.testLogger,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := m.CreateOrGetFromStorage(context.Background(), fmt.Sprintf("http://example.com/%d", i+1), 1)
+		if err != nil {
+			return
+		}
+	}
+}
+
+// func BenchmarkMemoryStorageCreateOrGetFromStorage(b *testing.B) {
+// 	paramTest := getParamsForTest()
+// 	m := InMemoryStorage{
+// 		storage:  paramTest.TestStorage,
+// 		myLogger: paramTest.testLogger,
+// 	}
+
+// 	b.ResetTimer()
+// 	for i := 0; i < b.N; i++ {
+// 		events := GenerateEvents(100) // Генерирует 100 событий
+// 		m.CreateOrGetBatchFromStorage(context.Background(), &events, 1)
+// 	}
+// }
+
+// GenerateEvents создает множество событий Event.
+func GenerateEvents(count int) models.BatchURL {
+	events := make(models.BatchURL, count)
+
+	for i := 0; i < count; i++ {
+		events[i] = models.Event{
+			UUID:          i + 1, // Уникальный идентификатор для каждого события
+			ShortURL:      "",
+			OriginalURL:   fmt.Sprintf("http://example.com/%d", i+1),
+			CorrelationID: fmt.Sprintf("correlation_id_%d", i+1),
+			//nolint:gosec
+			UserID:    rand.Intn(100) + 1, // Произвольный UserID в диапазоне от 1 до 100
+			IsDeleted: false,
+		}
+	}
+
+	return events
+}
+
+// GenerateURL geneterate new url.
+func GenerateURL(count int) string {
+	return fmt.Sprintf("http://example.com/%d", count+1)
 }

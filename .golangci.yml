@@ -1,0 +1,23 @@
+linters:
+  enable-all: true
+  disable: 
+    - ifshort
+    - maligned
+    - golint
+    - nosnakecase
+    - scopelint
+    - exhaustivestruct
+    - structcheck
+    - deadcode
+    - varcheck
+    - interfacer
+    - forbidigo
+    - funlen
+    - gci
+    - gofumpt
+    - wsl
+    - varnamelen
+    - paralleltest
+    - tagliatelle
+    - depguard
+    - exhaustruct

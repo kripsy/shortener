@@ -4,6 +4,10 @@ build:
 	go build -o ./bin/shortener ./cmd/shortener/*.go
 	chmod +x ./bin/shortener
 
+.PHONY: build_linter
+build_linter:
+	go build -o ./bin/staticlint ./cmd/staticlint/*.go
+	chmod +x ./bin/staticlint
 
 .PHONY: db
 db:
