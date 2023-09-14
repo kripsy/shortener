@@ -10,6 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io/fs"
 	"math/big"
 	"net"
 	"net/http"
@@ -118,21 +119,23 @@ func main() {
 }
 
 func createCertificate() error {
+	maxInt := 1658
 	cert := &x509.Certificate{
-		SerialNumber: big.NewInt(1658),
+		SerialNumber: big.NewInt(int64(maxInt)),
 		Subject: pkix.Name{
 			Organization: []string{"EngeniyOrg"},
 			Country:      []string{"RU"},
 		},
+		//nolint:gomnd
 		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1)},
 		NotBefore:   time.Now(),
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		KeyUsage:    x509.KeyUsageDigitalSignature,
 	}
-
+	//nolint:gomnd
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		return err
+		return fmt.Errorf("error generate key %w", err)
 	}
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, cert, cert, &privateKey.PublicKey, privateKey)
@@ -146,7 +149,7 @@ func createCertificate() error {
 		Bytes: certBytes,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error encode cert %w", err)
 	}
 
 	var privateKeyPEM bytes.Buffer
@@ -166,21 +169,25 @@ func createCertificate() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func saveCert(path string, payload *bytes.Buffer) error {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	permissionValue := 0755
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fs.FileMode(permissionValue))
 	if err != nil {
 		return fmt.Errorf("error open file %w", err)
 	}
 	writer := bufio.NewWriter(f)
 	_, err = writer.ReadFrom(payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("error write to file %w", err)
 	}
-	if err := f.Close(); err != nil {
-		return err
+	err = f.Close()
+	if err != nil {
+		return fmt.Errorf("error close file %w", err)
 	}
+
 	return nil
 }

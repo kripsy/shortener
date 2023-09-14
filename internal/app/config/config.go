@@ -132,10 +132,10 @@ func setRepositoryType(dsn, filePath string) RepositoryType {
 	}
 }
 
-func setHTTPS(URLPrefixRepo, EnableHTTPS string) string {
-	if EnableHTTPS != "" {
-		return strings.Replace(URLPrefixRepo, "http", "https", 1)
+func setHTTPS(urlPrefixRepo, enableHTTPS string) string {
+	if enableHTTPS != "" {
+		return strings.Replace(urlPrefixRepo, "http", "https", 1)
 	}
 
-	return URLPrefixRepo
+	return urlPrefixRepo
 }
