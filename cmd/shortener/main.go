@@ -1,11 +1,21 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
+	"net"
 	"net/http"
 	"os"
 	"text/template"
+	"time"
 
 	//nolint:gosec
 	_ "net/http/pprof"
@@ -71,11 +81,106 @@ func main() {
 	fmt.Printf("SERVER_ADDRESS: %s\n", application.GetAppConfig().URLServer)
 	fmt.Printf("BASE_URL: %s\n", application.GetAppConfig().URLPrefixRepo)
 
-	//nolint:gosec
-	err = http.ListenAndServe(application.GetAppConfig().URLServer, application.GetAppServer().Router)
+	srv := &http.Server{
+		Addr:         application.GetAppConfig().URLServer,
+		ReadTimeout:  time.Second,
+		WriteTimeout: time.Second,
+		//nolint:gomnd
+		IdleTimeout: 30 * time.Second,
+		//nolint:gomnd
+		ReadHeaderTimeout: 2 * time.Second,
+		Handler:           application.GetAppServer().Router,
+	}
+	if application.GetAppConfig().EnableHTTPS != "" {
+		fmt.Println("CREATE CERT")
+		err = createCertificate()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
+			return
+		}
+		fmt.Println("Success CREATE CERT")
+		err = srv.ListenAndServeTLS("./pki/server.crt", "./pki/server.key")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
+			return
+		}
+
+		return
+	}
+	err = srv.ListenAndServe()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 
 		return
 	}
+}
+
+func createCertificate() error {
+	cert := &x509.Certificate{
+		SerialNumber: big.NewInt(1658),
+		Subject: pkix.Name{
+			Organization: []string{"EngeniyOrg"},
+			Country:      []string{"RU"},
+		},
+		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1)},
+		NotBefore:   time.Now(),
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return err
+	}
+
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, cert, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return fmt.Errorf("error create certificate %w", err)
+	}
+
+	var certPEM bytes.Buffer
+	err = pem.Encode(&certPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certBytes,
+	})
+	if err != nil {
+		return err
+	}
+
+	var privateKeyPEM bytes.Buffer
+	err = pem.Encode(&privateKeyPEM, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	})
+	if err != nil {
+		return fmt.Errorf("error encode private key %w", err)
+	}
+
+	err = saveCert("./pki/server.crt", &certPEM)
+	if err != nil {
+		return err
+	}
+	err = saveCert("./pki/server.key", &privateKeyPEM)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func saveCert(path string, payload *bytes.Buffer) error {
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("error open file %w", err)
+	}
+	writer := bufio.NewWriter(f)
+	_, err = writer.ReadFrom(payload)
+	if err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return nil
 }

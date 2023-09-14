@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // RepositoryType represent type of selected storage : inmemory, filestorage, postgresql.
@@ -37,6 +38,9 @@ type Config struct {
 
 	// RepositoryType is a field to check type of repo (db, file, rom memory).
 	RepositoryType RepositoryType
+
+	// EnableHTTPS is a field to check is tls encryption
+	EnableHTTPS string
 }
 
 // InitConfig return a pointer Config.
@@ -57,6 +61,9 @@ func InitConfig() *Config {
 		"",
 		`set path for database... Or use DATABASE_DSN env. 
 		Example host=localhost user=urls password=jf6y5SfnxsuR sslmode=disable port=5432`)
+
+	enableHTTPS := flag.String("s", "", "set tls encryption... Or use ENABLE_HTTPS env")
+
 	flag.Parse()
 
 	if envSrvAddr := os.Getenv("SERVER_ADDRESS"); envSrvAddr != "" {
@@ -79,6 +86,10 @@ func InitConfig() *Config {
 		*fileStoragePath = envFileStoragePath
 	}
 
+	if envEnableHTTPS := os.Getenv("ENABLE_HTTPS"); envEnableHTTPS != "" {
+		*enableHTTPS = envEnableHTTPS
+	}
+
 	repositoryType = setRepositoryType(*databaseDsn, *fileStoragePath)
 
 	if repositoryType == PostgresDB {
@@ -92,12 +103,15 @@ func InitConfig() *Config {
 		}
 	}
 
+	*URLPrefixRepo = setHTTPS(*URLPrefixRepo, *enableHTTPS)
+
 	return &Config{
 		URLServer:       *URLServer,
 		URLPrefixRepo:   *URLPrefixRepo,
 		LoggerLevel:     *logLevel,
 		FileStoragePath: *fileStoragePath,
 		DatabaseDsn:     *databaseDsn,
+		EnableHTTPS:     *enableHTTPS,
 		RepositoryType:  repositoryType,
 	}
 }
@@ -116,4 +130,12 @@ func setRepositoryType(dsn, filePath string) RepositoryType {
 
 		return InMemory
 	}
+}
+
+func setHTTPS(URLPrefixRepo, EnableHTTPS string) string {
+	if EnableHTTPS != "" {
+		return strings.Replace(URLPrefixRepo, "http", "https", 1)
+	}
+
+	return URLPrefixRepo
 }
