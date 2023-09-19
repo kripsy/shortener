@@ -32,7 +32,6 @@ func TestGetTokenFromBearer(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "valid bearer string",
 			args: args{
@@ -81,7 +80,6 @@ func TestGetTokenFromBearer(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
-
 	type args struct {
 		r *http.Request
 	}
@@ -92,7 +90,6 @@ func TestGetToken(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "token in Authorization header",
 			args: args{
@@ -154,7 +151,6 @@ func TestStingContains(t *testing.T) {
 		args args
 		want bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "substring in string",
 			args: args{

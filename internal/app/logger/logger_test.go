@@ -1,4 +1,6 @@
 // Package logger provides functionality for logger.
+//
+//nolint:testpackage
 package logger
 
 import (
@@ -18,7 +20,6 @@ func TestInitLog(t *testing.T) {
 		want    *zap.Logger
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "incorrect log level",
 			args: args{
