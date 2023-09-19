@@ -69,8 +69,8 @@ func InitDB(_ context.Context, connString string, myLogger *zap.Logger) (*Postgr
 
 func RunMigrations(_ context.Context, connString string, _ *zap.Logger) error {
 	const migrationsPath = "./db/migrations"
-	fmt.Println(migrationsPath)
-	fmt.Println(connString)
+	// fmt.Println(migrationsPath)
+	// fmt.Println(connString)
 	m, err := migrate.New(fmt.Sprintf("file://%s", migrationsPath), connString)
 	if err != nil {
 		return fmt.Errorf("failed to get new migrate instance: %w", err)
@@ -445,7 +445,7 @@ func (mdb PostgresDB) DeleteSliceURLFromStorage(ctx context.Context, shortURL []
 
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Println(sql)
+	// fmt.Println(sql)
 	_, err = tx.ExecContext(ctx, sql, args...)
 	if err != nil {
 		mdb.myLogger.Debug("Failed to exec sql", zap.String("msg", err.Error()))

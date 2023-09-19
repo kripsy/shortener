@@ -174,16 +174,16 @@ func updateConfigAttrFromFile(path string,
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("err read config file %v ", err)
 
 		return "", "", "", "", "", fmt.Errorf("%w", err)
 	}
 	cfg := map[string]interface{}{}
 	err = json.Unmarshal(data, &cfg)
 	if err != nil {
-		fmt.Printf("%v", err)
+		fmt.Printf("error unmarshall config %v: ", err)
 
-		return "", "", "", "", "", fmt.Errorf("%w", err)
+		return "", "", "", "", "", fmt.Errorf("error unmarshall config %w", err)
 	}
 
 	for k, v := range inputParams {
@@ -210,7 +210,7 @@ func updateConfigAttrFromFile(path string,
 		inputParams["database_dsn"],
 		inputParams["file_storage_path"],
 		inputParams["enable_https"],
-		fmt.Errorf("%w", err)
+		nil
 }
 
 func setRepositoryType(dsn, filePath string) RepositoryType {

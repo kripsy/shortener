@@ -9,12 +9,14 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/fs"
 	"math/big"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"text/template"
 	"time"
 
@@ -71,7 +73,7 @@ func main() {
 	}
 	defer func() { // flushes buffer, if any
 		if err = application.GetAppLogger().Sync(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			fmt.Printf("error: %v\n", err)
 
 			return
 		}
@@ -81,6 +83,10 @@ func main() {
 
 	fmt.Printf("SERVER_ADDRESS: %s\n", application.GetAppConfig().URLServer)
 	fmt.Printf("BASE_URL: %s\n", application.GetAppConfig().URLPrefixRepo)
+
+	connsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
 
 	srv := &http.Server{
 		Addr:         application.GetAppConfig().URLServer,
@@ -92,6 +98,15 @@ func main() {
 		ReadHeaderTimeout: 2 * time.Second,
 		Handler:           application.GetAppServer().Router,
 	}
+
+	go func() {
+		<-sigint
+		if err := srv.Shutdown(context.Background()); err != nil {
+			fmt.Fprintf(os.Stderr, "error shotdown server: %v\n", err)
+		}
+		close(connsClosed)
+	}()
+
 	if application.GetAppConfig().EnableHTTPS != "" {
 		fmt.Println("CREATE CERT")
 		err = createCertificate()
@@ -111,11 +126,14 @@ func main() {
 		return
 	}
 	err = srv.ListenAndServe()
-	if err != nil {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 
 		return
 	}
+
+	<-connsClosed
+	fmt.Println("Server Shutdown successfully")
 }
 
 func createCertificate() error {

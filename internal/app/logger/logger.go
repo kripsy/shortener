@@ -14,7 +14,6 @@ func InitLog(level string) (*zap.Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-
 	cfg := zap.NewProductionConfig()
 	cfg.Level = lvl
 	zl, err := cfg.Build()
