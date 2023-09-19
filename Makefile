@@ -37,5 +37,9 @@ migration_force:
 run_autotest: build
 	~/go/shortenertest-darwin-arm64 -test.v -test.run=TestIteration1 -binary-path=./cmd/shortener/shortener -source-path=./
 
+.PHONY: run_unittest
+run_unittest:
+	go test ./... -v -coverprofile=coverage.out; go tool cover -html=coverage.out
+
 
 	
