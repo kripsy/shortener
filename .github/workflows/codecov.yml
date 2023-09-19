@@ -3,7 +3,7 @@ name: Codecov
 on:
   pull_request:
     branches:
-        - main
+      - main
   push:
     branches:
       - main
@@ -24,3 +24,4 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
