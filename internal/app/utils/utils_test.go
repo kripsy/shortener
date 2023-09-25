@@ -1,23 +1,23 @@
-//nolint:testpackage
-package utils
+package utils_test
 
 import (
 	"net/http"
 	"testing"
 
+	"github.com/kripsy/shortener/internal/app/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkCreateShortURL(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _ = CreateShortURL()
+		_, _ = utils.CreateShortURL()
 		// fmt.Println(res)
 	}
 }
 
 func BenchmarkCreateShortURLWithoutFmt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _ = CreateShortURLWithoutFmt()
+		_, _ = utils.CreateShortURLWithoutFmt()
 		// fmt.Println(res)
 	}
 }
@@ -67,7 +67,7 @@ func TestGetTokenFromBearer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			token, err := GetTokenFromBearer(tt.args.bearerString)
+			token, err := utils.GetTokenFromBearer(tt.args.bearerString)
 			if tt.wantErr {
 				assert.Empty(t, token)
 				assert.NotEmpty(t, err)
@@ -130,7 +130,7 @@ func TestGetToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			token, err := GetToken(tt.args.r)
+			token, err := utils.GetToken(tt.args.r)
 			if tt.wantErr {
 				assert.NotEmpty(t, err)
 			} else {
@@ -170,7 +170,7 @@ func TestStingContains(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := StingContains(tt.args.arrayString, tt.args.searchString)
+			res := utils.StingContains(tt.args.arrayString, tt.args.searchString)
 			assert.Equal(t, res, tt.want)
 		})
 	}

@@ -1,11 +1,10 @@
-// Package logger provides functionality for logger.
-//
-//nolint:testpackage
-package logger
+// Package logger_test provides functionality for testing logger.
+package logger_test
 
 import (
 	"testing"
 
+	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -39,7 +38,7 @@ func TestInitLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger, err := InitLog(tt.args.level)
+			logger, err := logger.InitLog(tt.args.level)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, logger)

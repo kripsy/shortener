@@ -1,5 +1,4 @@
-//nolint:testpackage
-package handlers
+package handlers_test
 
 import (
 	"encoding/json"
@@ -12,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/kripsy/shortener/internal/app/handlers"
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/mocks"
 	"github.com/kripsy/shortener/internal/app/models"
@@ -79,7 +79,7 @@ func TestSaveURLHandler(t *testing.T) {
 
 			request := httptest.NewRequest(tt.methodType, "/", body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			ht, _ := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveURLHandler
 
 			h(w, request)
@@ -145,7 +145,7 @@ func TestGetURLHandler(t *testing.T) {
 			body := strings.NewReader(tt.body)
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			ht, _ := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.GetURLHandler
 
 			h(w, request)
@@ -217,7 +217,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.methodType, tt.request, body)
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			ht, _ := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveURLJSONHandler
 
 			h(w, request)
@@ -234,7 +234,7 @@ func TestSaveURLJSONHandler(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			var resp URLResponseType
+			var resp handlers.URLResponseType
 			err = json.Unmarshal(shortURL, &resp)
 			require.NoError(t, err)
 
@@ -300,7 +300,7 @@ func TestPingDBHandler(t *testing.T) {
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
 
-			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			ht, _ := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.PingDBHandler
 
 			h(w, request)
@@ -383,7 +383,7 @@ func TestSaveBatchURLHandler(t *testing.T) {
 
 			request.Header.Set("Content-Type", tt.contentType)
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			ht, _ := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.SaveBatchURLHandler
 
 			h(w, request)
@@ -459,7 +459,7 @@ func TestDeleteBatchURLHandler(t *testing.T) {
 			request.Header.Set("Content-Type", tt.contentType)
 
 			w := httptest.NewRecorder()
-			ht, _ := APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			ht, _ := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
 			h := ht.DeleteBatchURLHandler
 			h(w, request)
 

@@ -1,9 +1,10 @@
-//nolint:testpackage
-package auth
+package auth_test
 
 import (
 	"fmt"
 	"log"
+
+	"github.com/kripsy/shortener/internal/app/auth"
 )
 
 //nolint:testableexamples
@@ -12,7 +13,7 @@ func ExampleBuildJWTString() {
 	userID := 123
 
 	// Create a JWT string for a given user
-	tokenString, err := BuildJWTString(userID)
+	tokenString, err := auth.BuildJWTString(userID)
 	if err != nil {
 		log.Fatalf("Failed to build JWT string: %v", err)
 	}
@@ -24,7 +25,7 @@ func ExampleBuildJWTString() {
 func ExampleGetUserID() {
 	// To demonstrate, first create a token using the BuildJWTString function
 	userID := 12345
-	tokenString, err := BuildJWTString(userID)
+	tokenString, err := auth.BuildJWTString(userID)
 	if err != nil {
 		fmt.Println("Error creating JWT:", err)
 
@@ -32,7 +33,7 @@ func ExampleGetUserID() {
 	}
 
 	// Now use this token to get the userID
-	extractedUserID, err := GetUserID(tokenString)
+	extractedUserID, err := auth.GetUserID(tokenString)
 	if err != nil {
 		fmt.Println("Error extracting userID:", err)
 
@@ -47,7 +48,7 @@ func ExampleGetUserID() {
 func ExampleGetExpires() {
 	// To demonstrate, first create a token using the BuildJWTString function
 	userID := 12345
-	tokenString, err := BuildJWTString(userID)
+	tokenString, err := auth.BuildJWTString(userID)
 	if err != nil {
 		fmt.Println("Error creating JWT:", err)
 
@@ -55,7 +56,7 @@ func ExampleGetExpires() {
 	}
 
 	// Now use this token to get the expiration time
-	expirationTime, err := GetExpires(tokenString)
+	expirationTime, err := auth.GetExpires(tokenString)
 	if err != nil {
 		fmt.Println("Error extracting expiration time:", err)
 
@@ -68,7 +69,7 @@ func ExampleGetExpires() {
 func ExampleIsTokenValid() {
 	// To demonstrate, first create a token using the BuildJWTString function
 	userID := 12345
-	tokenString, err := BuildJWTString(userID)
+	tokenString, err := auth.BuildJWTString(userID)
 	if err != nil {
 		fmt.Println("Error creating JWT:", err)
 
@@ -76,7 +77,7 @@ func ExampleIsTokenValid() {
 	}
 
 	// Now let's check if this token is valid
-	isValid, err := IsTokenValid(tokenString)
+	isValid, err := auth.IsTokenValid(tokenString)
 	if err != nil {
 		fmt.Println("Error checking token validity:", err)
 
