@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -81,7 +82,7 @@ func main() {
 
 	connsClosed := make(chan struct{})
 	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
+	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	srv := &http.Server{
 		Addr:              application.GetAppConfig().URLServer,
