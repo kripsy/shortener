@@ -6,7 +6,8 @@ import (
 	"net/http"
 )
 
-// compressWriter realize interface http.ResponseWriter, allows compress data transparent to the server, set correct headers.
+// compressWriter realize interface http.ResponseWriter,
+// allows compress data transparent to the server, set correct headers.
 type compressWriter struct {
 	w  http.ResponseWriter
 	zw *gzip.Writer
@@ -27,6 +28,7 @@ func (c *compressWriter) Header() http.Header {
 
 // Write call method Write of gzip writer.
 func (c *compressWriter) Write(p []byte) (int, error) {
+	//nolint:wrapcheck
 	return c.zw.Write(p)
 }
 
@@ -39,11 +41,12 @@ func (c *compressWriter) WriteHeader(statusCode int) {
 
 // Close closes gzip.Writer and send all data from buffer.
 func (c *compressWriter) Close() error {
+	//nolint:wrapcheck
 	return c.zw.Close()
 }
 
 // compressReader implements the io.ReadCloser interface and makes it transparent to the server
-// decompress data received from the client
+// decompress data received from the client.
 type compressReader struct {
 	r  io.ReadCloser
 	zr *gzip.Reader
@@ -53,6 +56,7 @@ type compressReader struct {
 func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
+		//nolint:wrapcheck
 		return nil, err
 	}
 
@@ -63,14 +67,17 @@ func newCompressReader(r io.ReadCloser) (*compressReader, error) {
 }
 
 // Read return p bytes from compressReader.
-func (c compressReader) Read(p []byte) (n int, err error) {
+func (c compressReader) Read(p []byte) (int, error) {
+	//nolint:wrapcheck
 	return c.zr.Read(p)
 }
 
 // Close closes Reader for compressReader.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
+		//nolint:wrapcheck
 		return err
 	}
+	//nolint:wrapcheck
 	return c.zr.Close()
 }

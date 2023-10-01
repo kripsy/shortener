@@ -1,13 +1,13 @@
-package inmemorystorage
+package inmemorystorage_test
 
 import (
 	"context"
 	"fmt"
 	"math/rand"
 	"reflect"
-	"sync"
 	"testing"
 
+	"github.com/kripsy/shortener/internal/app/inmemorystorage"
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/stretchr/testify/assert"
@@ -50,6 +50,7 @@ func getParamsForTest() *TestParams {
 			},
 		},
 	}
+
 	return tp
 }
 
@@ -61,6 +62,7 @@ func TestGetUserByID(t *testing.T) {
 		myLogger *zap.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx context.Context
 		ID  int
 	}
@@ -71,7 +73,6 @@ func TestGetUserByID(t *testing.T) {
 		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "first success getting user",
 			fields: fields{
@@ -103,14 +104,13 @@ func TestGetUserByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := InMemoryStorage{
-				storage:  tt.fields.storage,
-				myLogger: tt.fields.myLogger,
-				rwmutex:  &sync.RWMutex{},
-			}
+			m, _ := inmemorystorage.InitInMemoryStorage(tt.fields.storage,
+				tt.fields.myLogger)
+
 			got, err := m.GetUserByID(tt.args.ctx, tt.args.ID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.GetUserByID() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
@@ -128,6 +128,7 @@ func TestRegisterUser(t *testing.T) {
 		myLogger *zap.Logger
 	}
 	type args struct {
+		//nolint:containedctx
 		ctx context.Context
 	}
 	tests := []struct {
@@ -137,7 +138,6 @@ func TestRegisterUser(t *testing.T) {
 		name    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "first success register user",
 			fields: fields{
@@ -152,14 +152,13 @@ func TestRegisterUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := InMemoryStorage{
-				storage:  tt.fields.storage,
-				myLogger: tt.fields.myLogger,
-				rwmutex:  &sync.RWMutex{},
-			}
+			m, _ := inmemorystorage.InitInMemoryStorage(tt.fields.storage,
+				tt.fields.myLogger)
+
 			got, err := m.RegisterUser(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.RegisterUser() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			assert.NotEmpty(t, got)
@@ -169,10 +168,9 @@ func TestRegisterUser(t *testing.T) {
 
 func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
 	paramTest := getParamsForTest()
-	m := InMemoryStorage{
-		storage:  paramTest.TestStorage,
-		myLogger: paramTest.testLogger,
-	}
+
+	m, _ := inmemorystorage.InitInMemoryStorage(paramTest.TestStorage,
+		paramTest.testLogger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -184,10 +182,8 @@ func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
 }
 func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 	paramTest := getParamsForTest()
-	m := InMemoryStorage{
-		storage:  paramTest.TestStorage,
-		myLogger: paramTest.testLogger,
-	}
+	m, _ := inmemorystorage.InitInMemoryStorage(paramTest.TestStorage,
+		paramTest.testLogger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -212,7 +208,7 @@ func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 // 	}
 // }
 
-// GenerateEvents создает множество событий Event
+// GenerateEvents создает множество событий Event.
 func GenerateEvents(count int) models.BatchURL {
 	events := make(models.BatchURL, count)
 
@@ -222,15 +218,16 @@ func GenerateEvents(count int) models.BatchURL {
 			ShortURL:      "",
 			OriginalURL:   fmt.Sprintf("http://example.com/%d", i+1),
 			CorrelationID: fmt.Sprintf("correlation_id_%d", i+1),
-			UserID:        rand.Intn(100) + 1, // Произвольный UserID в диапазоне от 1 до 100
-			IsDeleted:     false,
+			//nolint:gosec
+			UserID:    rand.Intn(100) + 1, // Произвольный UserID в диапазоне от 1 до 100
+			IsDeleted: false,
 		}
 	}
 
 	return events
 }
 
-// GenerateEvents создает множество событий Event
+// GenerateURL geneterate new url.
 func GenerateURL(count int) string {
 	return fmt.Sprintf("http://example.com/%d", count+1)
 }

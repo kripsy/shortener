@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -17,7 +18,6 @@ const secretKey = "supersecretkey"
 const tokenExp = time.Hour * 3
 
 func BuildJWTString(userID int) (string, error) {
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
@@ -29,6 +29,7 @@ func BuildJWTString(userID int) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "failed in BuildJWTString: %w")
 	}
+
 	return tokenString, nil
 }
 
@@ -38,11 +39,11 @@ func GetUserID(tokenString string) (int, error) {
 		return []byte(secretKey), nil
 	})
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%w", err)
 	}
 
 	if !token.Valid {
-		return 0, err
+		return 0, fmt.Errorf("%w", err)
 	}
 
 	return claims.UserID, nil
@@ -54,11 +55,11 @@ func GetExpires(tokenString string) (time.Time, error) {
 		return []byte(secretKey), nil
 	})
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%w", err)
 	}
 
 	if !token.Valid {
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%w", err)
 	}
 
 	return claims.ExpiresAt.Time, nil
@@ -70,11 +71,11 @@ func IsTokenValid(tokenString string) (bool, error) {
 		return []byte(secretKey), nil
 	})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	if !token.Valid {
-		return false, err
+		return false, fmt.Errorf("%w", err)
 	}
 
 	return true, nil

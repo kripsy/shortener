@@ -9,48 +9,45 @@ import (
 	"os"
 	"strings"
 
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/client/clientcompress"
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/client/clientmodels"
+	//nolint:depguard
 	"github.com/kripsy/shortener/internal/client/clientutils"
 )
 
 func main() {
-
 	endpoint := "http://localhost:8080/api/shorten"
-	// контейнер данных для запроса
-	data := clientmodels.Requset{}
-	// приглашение в консоли
+
 	fmt.Println("Введите длинный URL")
-	// открываем потоковое чтение из консоли
 	reader := bufio.NewReader(os.Stdin)
-	// читаем строку из консоли
 	long, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 	long = strings.TrimSuffix(long, "\n")
-	// заполняем контейнер данными
+	data := clientmodels.Requset{URL: long}
 
-	data.URL = long
-
-	// добавляем HTTP-клиент
+	//nolint:exhaustruct
 	client := &http.Client{}
-	// пишем запрос
-	// запрос методом POST должен, помимо заголовков, содержать тело
-	// тело должно быть источником потокового чтения io.Reader
+
 	reqData, err := json.Marshal(data)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 
 	cb := clientcompress.Compress(string(reqData))
-
+	//nolint:noctx
 	request, err := http.NewRequest(http.MethodPost, endpoint, &cb)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 
@@ -61,6 +58,7 @@ func main() {
 	response, err := client.Do(request)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 	// выводим код ответа
@@ -70,6 +68,7 @@ func main() {
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		return
 	}
 
