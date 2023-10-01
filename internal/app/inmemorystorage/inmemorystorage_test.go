@@ -1,14 +1,13 @@
-//nolint:testpackage
-package inmemorystorage
+package inmemorystorage_test
 
 import (
 	"context"
 	"fmt"
 	"math/rand"
 	"reflect"
-	"sync"
 	"testing"
 
+	"github.com/kripsy/shortener/internal/app/inmemorystorage"
 	"github.com/kripsy/shortener/internal/app/logger"
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/stretchr/testify/assert"
@@ -105,11 +104,9 @@ func TestGetUserByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := InMemoryStorage{
-				storage:  tt.fields.storage,
-				myLogger: tt.fields.myLogger,
-				rwmutex:  &sync.RWMutex{},
-			}
+			m, _ := inmemorystorage.InitInMemoryStorage(tt.fields.storage,
+				tt.fields.myLogger)
+
 			got, err := m.GetUserByID(tt.args.ctx, tt.args.ID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.GetUserByID() error = %v, wantErr %v", err, tt.wantErr)
@@ -155,11 +152,9 @@ func TestRegisterUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := InMemoryStorage{
-				storage:  tt.fields.storage,
-				myLogger: tt.fields.myLogger,
-				rwmutex:  &sync.RWMutex{},
-			}
+			m, _ := inmemorystorage.InitInMemoryStorage(tt.fields.storage,
+				tt.fields.myLogger)
+
 			got, err := m.RegisterUser(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InMemoryStorage.RegisterUser() error = %v, wantErr %v", err, tt.wantErr)
@@ -173,10 +168,9 @@ func TestRegisterUser(t *testing.T) {
 
 func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
 	paramTest := getParamsForTest()
-	m := InMemoryStorage{
-		storage:  paramTest.TestStorage,
-		myLogger: paramTest.testLogger,
-	}
+
+	m, _ := inmemorystorage.InitInMemoryStorage(paramTest.TestStorage,
+		paramTest.testLogger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -188,10 +182,8 @@ func BenchmarkCreateOrGetFromStorageWithoutPointer(b *testing.B) {
 }
 func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 	paramTest := getParamsForTest()
-	m := InMemoryStorage{
-		storage:  paramTest.TestStorage,
-		myLogger: paramTest.testLogger,
-	}
+	m, _ := inmemorystorage.InitInMemoryStorage(paramTest.TestStorage,
+		paramTest.testLogger)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
