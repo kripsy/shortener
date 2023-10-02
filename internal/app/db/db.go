@@ -462,3 +462,57 @@ func (mdb PostgresDB) DeleteSliceURLFromStorage(ctx context.Context, shortURL []
 
 	return nil
 }
+
+func (mdb PostgresDB) GetStatsFromStorage(ctx context.Context) (*models.Stats, error) {
+	tx, err := mdb.DB.Begin()
+	if err != nil {
+		mdb.myLogger.Debug("Failed to Begin Tx in GetStatsFromStorage", zap.String("msg", err.Error()))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	defer func() {
+		if err = tx.Rollback(); err != nil {
+			mdb.myLogger.Debug("error in rollback", zap.Error(err))
+		}
+	}()
+
+	usersSubquery, _, _ := squirrel.Select("COUNT (DISTINCT id)").From("users").PlaceholderFormat(squirrel.Dollar).ToSql()
+
+	urlsSubquery, _, _ := squirrel.Select("COUNT (DISTINCT id)").From("urls").PlaceholderFormat(squirrel.Dollar).ToSql()
+
+	query, _, err := squirrel.Select(fmt.Sprintf("(%s) AS user_count",
+		usersSubquery),
+		fmt.Sprintf("(%s) AS url_count",
+			urlsSubquery)).ToSql()
+
+	if err != nil {
+		mdb.myLogger.Debug("Failed to generate sql command", zap.String("msg", err.Error()))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	stmt, err := tx.PrepareContext(ctx, query)
+
+	if err != nil {
+		mdb.myLogger.Debug("Failed to PrepareContext in GetStatsFromStorage", zap.String("msg", err.Error()))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	defer stmt.Close()
+
+	row := stmt.QueryRowContext(ctx)
+	var countUrls, countUsers int
+	err = row.Scan(&countUsers, &countUrls)
+	if err != nil {
+		mdb.myLogger.Debug("failed to scan in GetStatsFromStorage", zap.String("msg", err.Error()))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return &models.Stats{
+		URLs:  countUrls,
+		Users: countUsers,
+	}, nil
+}

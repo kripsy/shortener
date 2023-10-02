@@ -194,20 +194,6 @@ func BenchmarkCreateOrGetFromStorage(b *testing.B) {
 	}
 }
 
-// func BenchmarkMemoryStorageCreateOrGetFromStorage(b *testing.B) {
-// 	paramTest := getParamsForTest()
-// 	m := InMemoryStorage{
-// 		storage:  paramTest.TestStorage,
-// 		myLogger: paramTest.testLogger,
-// 	}
-
-// 	b.ResetTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		events := GenerateEvents(100) // Генерирует 100 событий
-// 		m.CreateOrGetBatchFromStorage(context.Background(), &events, 1)
-// 	}
-// }
-
 // GenerateEvents создает множество событий Event.
 func GenerateEvents(count int) models.BatchURL {
 	events := make(models.BatchURL, count)
@@ -230,4 +216,55 @@ func GenerateEvents(count int) models.BatchURL {
 // GenerateURL geneterate new url.
 func GenerateURL(count int) string {
 	return fmt.Sprintf("http://example.com/%d", count+1)
+}
+
+func TestGetStatsFromInmemoryStorage(t *testing.T) {
+	paramTest := getParamsForTest()
+
+	type fields struct {
+		storage  map[string]models.Event
+		myLogger *zap.Logger
+	}
+	type args struct {
+		//nolint:containedctx
+		ctx context.Context
+	}
+	tests := []struct {
+		want    *models.User
+		fields  fields
+		args    args
+		name    string
+		wantErr bool
+	}{
+		{
+			name: "first success get stats",
+			fields: fields{
+				storage:  paramTest.TestStorage,
+				myLogger: paramTest.testLogger,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, _ := inmemorystorage.InitInMemoryStorage(tt.fields.storage,
+				tt.fields.myLogger)
+
+			got, err := m.GetStatsFromStorage(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InMemoryStorage.RegisterUser() error = %v, wantErr %v", err, tt.wantErr)
+
+				return
+			}
+
+			if !tt.wantErr {
+				assert.NoError(t, err)
+				assert.Equal(t, got.URLs, 3)
+				assert.Equal(t, got.Users, 2)
+			}
+		})
+	}
 }

@@ -25,6 +25,7 @@ type Repository interface {
 	RegisterUser(ctx context.Context) (*models.User, error)
 	GetBatchURLFromStorage(ctx context.Context, userID int) (*models.BatchURL, error)
 	DeleteSliceURLFromStorage(ctx context.Context, shortURL []string, userID int) error
+	GetStatsFromStorage(ctx context.Context) (*models.Stats, error)
 
 	GetUserByID(ctx context.Context, id int) (*models.User, error)
 	Close()
@@ -421,4 +422,37 @@ func (h *APIHandler) DeleteBatchURLHandler(w http.ResponseWriter, r *http.Reques
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+/*
+GetInternalStats - handler, that returns stats about urls and users.
+If X-Real-IP not in trusted_subnet - it will return 403.
+*/
+func (h *APIHandler) GetInternalStats(w http.ResponseWriter, r *http.Request) {
+	h.myLogger.Debug("start GetInternalStats")
+	if r.Method != http.MethodGet {
+		http.Error(w, "", http.StatusBadRequest)
+
+		return
+	}
+
+	// realIP := r.Header.Get("X-Real-IP")
+	// h.myLogger.Debug("X-Real-IP: ", zap.String("msg", realIP))
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second)
+	defer cancel()
+	stats, err := h.repository.GetStatsFromStorage(ctx)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+	}
+
+	resp, err := json.Marshal(stats)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(resp)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+	}
 }

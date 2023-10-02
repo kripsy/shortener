@@ -121,6 +121,21 @@ func (mr *MockRepositoryMockRecorder) GetOriginalURLFromStorage(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOriginalURLFromStorage", reflect.TypeOf((*MockRepository)(nil).GetOriginalURLFromStorage), arg0, arg1)
 }
 
+// GetStatsFromStorage mocks base method.
+func (m *MockRepository) GetStatsFromStorage(arg0 context.Context) (*models.Stats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStatsFromStorage", arg0)
+	ret0, _ := ret[0].(*models.Stats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStatsFromStorage indicates an expected call of GetStatsFromStorage.
+func (mr *MockRepositoryMockRecorder) GetStatsFromStorage(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatsFromStorage", reflect.TypeOf((*MockRepository)(nil).GetStatsFromStorage), arg0)
+}
+
 // GetUserByID mocks base method.
 func (m *MockRepository) GetUserByID(arg0 context.Context, arg1 int) (*models.User, error) {
 	m.ctrl.T.Helper()

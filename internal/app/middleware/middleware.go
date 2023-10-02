@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -11,14 +12,16 @@ import (
 )
 
 type MyMiddleware struct {
-	MyLogger *zap.Logger
-	repo     handlers.Repository
+	MyLogger      *zap.Logger
+	repo          handlers.Repository
+	TrustedSubnet *net.IPNet
 }
 
-func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository) *MyMiddleware {
+func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository, ts *net.IPNet) *MyMiddleware {
 	m := &MyMiddleware{
-		MyLogger: myLogger,
-		repo:     repo,
+		MyLogger:      myLogger,
+		repo:          repo,
+		TrustedSubnet: ts,
 	}
 
 	return m

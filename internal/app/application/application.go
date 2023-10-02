@@ -97,13 +97,15 @@ func NewApp(_ context.Context) (*App, error) {
 		repo = inmemory
 	}
 
-	srv, err := server.InitServer(cfg.URLPrefixRepo, repo, myLogger)
+	srv, err := server.InitServer(cfg.URLPrefixRepo, repo, myLogger, cfg.TrustedSubnet)
 
 	if err != nil {
 		myLogger.Debug("Failed init server", zap.String("msg", err.Error()))
 
 		return nil, fmt.Errorf("%w", err)
 	}
+
+	myLogger.Debug("current trusted network", zap.Any("msg", cfg.TrustedSubnet))
 
 	return &App{
 		appConfig: cfg,

@@ -4,6 +4,7 @@ package server
 import (
 	"expvar"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/pprof"
 
@@ -23,7 +24,7 @@ type MyServer struct {
 	URLRepo  string
 }
 
-func InitServer(urlRepo string, repo handlers.Repository, myLogger *zap.Logger) (*MyServer, error) {
+func InitServer(urlRepo string, repo handlers.Repository, myLogger *zap.Logger, ts *net.IPNet) (*MyServer, error) {
 	m := &MyServer{
 		Router:   chi.NewRouter(),
 		MyLogger: myLogger,
@@ -34,11 +35,12 @@ func InitServer(urlRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-	myMiddleware := middleware.InitMyMiddleware(m.MyLogger, repo)
+	myMiddleware := middleware.InitMyMiddleware(m.MyLogger, repo, ts)
 
 	m.Router.Use(myMiddleware.CompressMiddleware)
 	m.Router.Use(myMiddleware.RequestLogger)
 	m.Router.Use(myMiddleware.JWTMiddleware)
+	m.Router.Use(myMiddleware.TrustedSubnetMiddleware)
 	m.Router.Post("/", ht.SaveURLHandler)
 	m.Router.Get("/{id}", ht.GetURLHandler)
 	m.Router.Post("/api/shorten", ht.SaveURLJSONHandler)
@@ -46,6 +48,7 @@ func InitServer(urlRepo string, repo handlers.Repository, myLogger *zap.Logger) 
 	m.Router.Get("/ping", ht.PingDBHandler)
 	m.Router.Get("/api/user/urls", ht.GetBatchURLHandler)
 	m.Router.Delete("/api/user/urls", ht.DeleteBatchURLHandler)
+	m.Router.Get("/api/internal/stats", ht.GetInternalStats)
 
 	m.Router.HandleFunc("/debug/pprof/*", pprof.Index)
 	m.Router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
