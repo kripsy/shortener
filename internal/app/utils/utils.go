@@ -4,6 +4,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -20,7 +21,9 @@ import (
 	"time"
 
 	//nolint:depguard
+
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -197,4 +200,20 @@ func saveCert(path string, payload *bytes.Buffer) error {
 	}
 
 	return nil
+}
+
+func GetTokenFromMetadata(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+
+		return "", fmt.Errorf("not metadata in context")
+	}
+
+	values := md["authorization"]
+	if len(values) == 0 {
+		return "", fmt.Errorf("token not found")
+	}
+
+	token := strings.TrimPrefix(values[0], "Bearer ")
+	return token, nil
 }

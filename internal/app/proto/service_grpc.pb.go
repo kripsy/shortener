@@ -19,89 +19,200 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Greeter_SayHello_FullMethodName = "/Greeter/SayHello"
+	Shortener_SaveURL_FullMethodName      = "/Shortener/SaveURL"
+	Shortener_GetURL_FullMethodName       = "/Shortener/GetURL"
+	Shortener_SaveBatchURL_FullMethodName = "/Shortener/SaveBatchURL"
+	Shortener_GetStats_FullMethodName     = "/Shortener/GetStats"
 )
 
-// GreeterClient is the client API for Greeter service.
+// ShortenerClient is the client API for Shortener service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type GreeterClient interface {
-	SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error)
+type ShortenerClient interface {
+	SaveURL(ctx context.Context, in *SaveURLRequest, opts ...grpc.CallOption) (*SaveURLResponse, error)
+	GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error)
+	SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error)
+	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
-type greeterClient struct {
+type shortenerClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewGreeterClient(cc grpc.ClientConnInterface) GreeterClient {
-	return &greeterClient{cc}
+func NewShortenerClient(cc grpc.ClientConnInterface) ShortenerClient {
+	return &shortenerClient{cc}
 }
 
-func (c *greeterClient) SayHello(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloResponse, error) {
-	out := new(HelloResponse)
-	err := c.cc.Invoke(ctx, Greeter_SayHello_FullMethodName, in, out, opts...)
+func (c *shortenerClient) SaveURL(ctx context.Context, in *SaveURLRequest, opts ...grpc.CallOption) (*SaveURLResponse, error) {
+	out := new(SaveURLResponse)
+	err := c.cc.Invoke(ctx, Shortener_SaveURL_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// GreeterServer is the server API for Greeter service.
-// All implementations must embed UnimplementedGreeterServer
+func (c *shortenerClient) GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error) {
+	out := new(GetURLResponse)
+	err := c.cc.Invoke(ctx, Shortener_GetURL_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shortenerClient) SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error) {
+	out := new(SaveBatchURLResponse)
+	err := c.cc.Invoke(ctx, Shortener_SaveBatchURL_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shortenerClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error) {
+	out := new(GetStatsResponse)
+	err := c.cc.Invoke(ctx, Shortener_GetStats_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ShortenerServer is the server API for Shortener service.
+// All implementations must embed UnimplementedShortenerServer
 // for forward compatibility
-type GreeterServer interface {
-	SayHello(context.Context, *HelloRequest) (*HelloResponse, error)
-	mustEmbedUnimplementedGreeterServer()
+type ShortenerServer interface {
+	SaveURL(context.Context, *SaveURLRequest) (*SaveURLResponse, error)
+	GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error)
+	SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error)
+	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
+	mustEmbedUnimplementedShortenerServer()
 }
 
-// UnimplementedGreeterServer must be embedded to have forward compatible implementations.
-type UnimplementedGreeterServer struct {
+// UnimplementedShortenerServer must be embedded to have forward compatible implementations.
+type UnimplementedShortenerServer struct {
 }
 
-func (UnimplementedGreeterServer) SayHello(context.Context, *HelloRequest) (*HelloResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SayHello not implemented")
+func (UnimplementedShortenerServer) SaveURL(context.Context, *SaveURLRequest) (*SaveURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveURL not implemented")
 }
-func (UnimplementedGreeterServer) mustEmbedUnimplementedGreeterServer() {}
+func (UnimplementedShortenerServer) GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetURL not implemented")
+}
+func (UnimplementedShortenerServer) SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveBatchURL not implemented")
+}
+func (UnimplementedShortenerServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
+}
+func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
 
-// UnsafeGreeterServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GreeterServer will
+// UnsafeShortenerServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ShortenerServer will
 // result in compilation errors.
-type UnsafeGreeterServer interface {
-	mustEmbedUnimplementedGreeterServer()
+type UnsafeShortenerServer interface {
+	mustEmbedUnimplementedShortenerServer()
 }
 
-func RegisterGreeterServer(s grpc.ServiceRegistrar, srv GreeterServer) {
-	s.RegisterService(&Greeter_ServiceDesc, srv)
+func RegisterShortenerServer(s grpc.ServiceRegistrar, srv ShortenerServer) {
+	s.RegisterService(&Shortener_ServiceDesc, srv)
 }
 
-func _Greeter_SayHello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
+func _Shortener_SaveURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveURLRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GreeterServer).SayHello(ctx, in)
+		return srv.(ShortenerServer).SaveURL(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Greeter_SayHello_FullMethodName,
+		FullMethod: Shortener_SaveURL_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServer).SayHello(ctx, req.(*HelloRequest))
+		return srv.(ShortenerServer).SaveURL(ctx, req.(*SaveURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Greeter_ServiceDesc is the grpc.ServiceDesc for Greeter service.
+func _Shortener_GetURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).GetURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Shortener_GetURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).GetURL(ctx, req.(*GetURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Shortener_SaveBatchURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveBatchURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).SaveBatchURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Shortener_SaveBatchURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).SaveBatchURL(ctx, req.(*SaveBatchURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Shortener_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).GetStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Shortener_GetStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).GetStats(ctx, req.(*GetStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Greeter_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Greeter",
-	HandlerType: (*GreeterServer)(nil),
+var Shortener_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "Shortener",
+	HandlerType: (*ShortenerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SayHello",
-			Handler:    _Greeter_SayHello_Handler,
+			MethodName: "SaveURL",
+			Handler:    _Shortener_SaveURL_Handler,
+		},
+		{
+			MethodName: "GetURL",
+			Handler:    _Shortener_GetURL_Handler,
+		},
+		{
+			MethodName: "SaveBatchURL",
+			Handler:    _Shortener_SaveBatchURL_Handler,
+		},
+		{
+			MethodName: "GetStats",
+			Handler:    _Shortener_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

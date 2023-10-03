@@ -2,10 +2,40 @@ syntax = "proto3";
 
 option go_package = "internal/app/proto";
 
-service Greeter {
-  rpc SayHello(HelloRequest) returns (HelloResponse) {};
+service Shortener {
+  rpc SaveURL(SaveURLRequest) returns (SaveURLResponse);
+  rpc GetURL(GetURLRequest) returns (GetURLResponse);
+  rpc SaveBatchURL(SaveBatchURLRequest) returns (SaveBatchURLResponse);
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
 }
 
-message HelloRequest { string name = 1; }
+message SaveURLRequest { string url = 1; }
+message SaveURLResponse {
+  string result = 1;
+  bool isUniqueError = 2;
+}
 
-message HelloResponse { string message = 1; }
+message GetURLRequest { string url = 1; }
+message GetURLResponse { string url = 1; }
+message SaveBatchURLRequest {
+  message URLObject {
+    string correlation_id = 1;
+    string original_url = 2;
+  }
+  repeated URLObject url_batch = 1;
+}
+
+message SaveBatchURLResponse {
+  message URLObject {
+    string correlation_id = 1;
+    string short_url = 2;
+  }
+  repeated URLObject url_batch = 1;
+}
+
+message GetStatsRequest {}
+
+message GetStatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}

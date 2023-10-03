@@ -14,6 +14,7 @@ import (
 
 	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
+	"github.com/kripsy/shortener/internal/app/usecase"
 	"github.com/kripsy/shortener/internal/app/utils"
 	"go.uber.org/zap"
 )
@@ -236,7 +237,9 @@ return
 */
 func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request) {
 	token, _ := utils.GetToken(r)
-	userID, _ := auth.GetUserID(token)
+	// userID, _ := auth.GetUserID(token)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 	h.myLogger.Debug("start SaveBatchURLHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
 		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
@@ -255,40 +258,13 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var payload *models.BatchURL
-	err = json.Unmarshal(body, &payload)
-	fmt.Println(len(*payload))
+	result, err := usecase.ProcessBatchURLs(ctx, body, h.repository, token, h.globalURL, h.myLogger)
 	if err != nil {
-		h.myLogger.Debug("Error unmarshall body", zap.String("error unmarshall", err.Error()))
-		http.Error(w, "", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
 	}
-
-	if len(*payload) < 1 {
-		h.myLogger.Debug("Payload size < 1")
-		http.Error(w, "Empty payload", http.StatusBadRequest)
-
-		return
-	}
-
-	h.myLogger.Debug("Unmarshall body", zap.Any("body", payload))
-	//nolint:contextcheck
-	val, err := h.repository.CreateOrGetBatchFromStorage(context.Background(), payload, userID)
-	if err != nil {
-		h.myLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
-		http.Error(w, "", http.StatusBadRequest)
-
-		return
-	}
-	// important!!! short url must include server address. It's easy, but in 12 increment i forgot about it
-	for k := range *val {
-		(*val)[k].ShortURL = utils.ReturnURL((*val)[k].ShortURL, h.globalURL)
-	}
-
-	h.myLogger.Debug("Result CreateOrGetBatchFromStorage", zap.Any("msg", val))
-
-	resp, err := json.Marshal(val)
+	resp, err := json.Marshal(result)
 
 	if err != nil {
 		h.myLogger.Debug("Error Marshall response", zap.String("error Marshall response", err.Error()))
