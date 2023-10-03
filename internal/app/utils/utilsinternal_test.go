@@ -2,8 +2,6 @@ package utils
 
 import (
 	"bytes"
-	//nolint:staticcheck,nolintlint
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -12,8 +10,7 @@ import (
 
 func TestSaveCert(t *testing.T) {
 	t.Run("save valid cert", func(t *testing.T) {
-		//nolint:staticcheck,nolintlint
-		tmpfile, err := ioutil.TempFile("", "example.*.txt")
+		tmpfile, err := os.CreateTemp("", "example.*.txt")
 		assert.NoError(t, err)
 		defer os.Remove(tmpfile.Name())
 
