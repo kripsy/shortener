@@ -81,15 +81,18 @@ func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 		}
 		m.MyLogger.Debug("continue with compress")
 		acceptEncoding := r.Header.Get("Accept-Encoding")
+
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
 			m.MyLogger.Debug("Accept-Encoding gzip")
 			cw := newCompressWriter(w)
 			ow = cw
+			ow.Header().Set("Content-Encoding", "gzip")
 			defer cw.Close()
 		}
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
+
 		if sendsGzip {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
 			m.MyLogger.Debug("Content-Encoding gzip")

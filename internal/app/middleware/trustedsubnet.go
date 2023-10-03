@@ -21,7 +21,10 @@ import (
 func (m *MyMiddleware) TrustedSubnetMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		m.MyLogger.Debug("Start TrustedSubnetMiddleware")
-		isURLProtected := m.urlIsProtected(r.URL.Path)
+		protectedURL := []string{
+			"/api/internal/stats",
+		}
+		isURLProtected := utils.StingContains(protectedURL, r.URL.Path)
 		m.MyLogger.Debug("URL protected value", zap.Bool("msg", isURLProtected))
 		if !isURLProtected {
 			next.ServeHTTP(w, r)
@@ -54,7 +57,7 @@ func (m *MyMiddleware) GrpcTrustedSubnetMiddleware(ctx context.Context,
 
 	methodName := info.FullMethod
 	m.MyLogger.Debug("method ", zap.String("msg", methodName))
-	if methodName != "/Shortener/Stats" {
+	if methodName != "/Shortener/GetStats" {
 		return handler(ctx, req)
 	}
 	peerInfo, ok := peer.FromContext(ctx)
@@ -79,15 +82,4 @@ func (m *MyMiddleware) isIPTrusted(ip net.IP) bool {
 	}
 
 	return false
-}
-
-func (m *MyMiddleware) urlIsProtected(url string) bool {
-	protectedURL := []string{
-		"/api/internal/stats",
-	}
-	m.MyLogger.Debug("Start GrpcTrustedSubnetMiddleware")
-	urlIsProtected := utils.StingContains(protectedURL, url)
-	m.MyLogger.Debug("URL protected value", zap.Bool("msg", urlIsProtected))
-	// check if current URL is protected
-	return urlIsProtected
 }
