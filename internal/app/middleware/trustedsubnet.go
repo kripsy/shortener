@@ -3,6 +3,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -54,29 +55,29 @@ func (m *MyMiddleware) GrpcTrustedSubnetMiddleware(ctx context.Context,
 	methodName := info.FullMethod
 	m.MyLogger.Debug("method ", zap.String("msg", methodName))
 	if methodName != "/Shortener/Stats" {
-
 		return handler(ctx, req)
 	}
 	peerInfo, ok := peer.FromContext(ctx)
 	if !ok {
-		return nil, grpcstatus.Error(codes.PermissionDenied, "No peer info found")
+		return nil, fmt.Errorf("%w", grpcstatus.Error(codes.PermissionDenied, "No peer info found"))
 	}
 	ip, _, err := net.SplitHostPort(peerInfo.Addr.String())
 	if err != nil {
-		return nil, grpcstatus.Error(codes.Internal, "Failed to parse IP address")
+		return nil, fmt.Errorf("%w", grpcstatus.Error(codes.Internal, "Failed to parse IP address"))
 	}
 
 	if m.isIPTrusted(net.ParseIP(ip)) {
 		return handler(ctx, req)
-	} else {
-		return nil, grpcstatus.Error(codes.PermissionDenied, "IP not trusted")
 	}
+
+	return nil, fmt.Errorf("%w", grpcstatus.Error(codes.PermissionDenied, "IP not trusted"))
 }
 
 func (m *MyMiddleware) isIPTrusted(ip net.IP) bool {
 	if m.TrustedSubnet != nil && m.TrustedSubnet.Contains(ip) {
 		return true
 	}
+
 	return false
 }
 

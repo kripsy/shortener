@@ -117,7 +117,7 @@ func main() {
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 
-				return err
+				return fmt.Errorf("%w", err)
 			}
 			l.Debug("cert has been created")
 
@@ -129,9 +129,10 @@ func main() {
 
 	// start grpc server
 	grp.Go(func() error {
+		//nolint:gosec
 		lis, err := net.Listen("tcp", ":50051") // Выберите другой порт для gRPC сервера
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 		log.Println("Starting gRPC server on :50051")
 

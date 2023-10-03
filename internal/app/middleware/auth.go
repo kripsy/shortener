@@ -141,7 +141,10 @@ func (m *MyMiddleware) setNewCookie(_ context.Context, w http.ResponseWriter, r 
 	return token, nil
 }
 
-func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (interface{}, error) {
 	m.MyLogger.Debug("Start JWTInterceptor")
 
 	protectedMethods := []string{
@@ -153,23 +156,22 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context, req interface{}, 
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-
-		return nil, status.Error(codes.Unauthenticated, "metadata is not provided")
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "metadata is not provided"))
 	}
 
 	values := md["authorization"]
 	if len(values) == 0 {
 		ctx, err := m.handleUnauthenticated(ctx, isMethodProtected)
 		if err != nil {
-			return nil, status.Error(codes.Unauthenticated, "internal error to create token")
+			return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "internal error to create token"))
 		}
+
 		return handler(ctx, req)
 	}
 
 	token := strings.TrimPrefix(values[0], "Bearer ")
 	tokenIsValid, _ := auth.IsTokenValid(token)
 	if !tokenIsValid {
-
 		return m.handleUnauthenticated(ctx, isMethodProtected)
 	}
 
@@ -177,8 +179,7 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context, req interface{}, 
 
 	_, err := auth.GetUserID(token)
 	if err != nil && isMethodProtected {
-
-		return nil, status.Error(codes.Unauthenticated, "invalid user")
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "invalid user"))
 	}
 
 	return handler(ctx, req)
@@ -186,18 +187,21 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context, req interface{}, 
 
 func (m *MyMiddleware) handleUnauthenticated(ctx context.Context, isMethodProtected bool) (context.Context, error) {
 	if isMethodProtected {
-		return nil, status.Error(codes.Unauthenticated, "authentication required")
+		return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "authentication required"))
 	}
 
 	// Generate new token and set it in metadata for further processing
 	newToken, err := m.generateNewToken(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to generate token")
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "failed to generate token"))
 	}
 
 	newMD := metadata.Pairs("authorization", "Bearer "+newToken)
 	newCtx := metadata.NewOutgoingContext(ctx, newMD)
-	grpc.SendHeader(ctx, newMD)
+	err = grpc.SendHeader(ctx, newMD)
+	if err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "failed to set token"))
+	}
 
 	return newCtx, nil
 }
@@ -205,8 +209,8 @@ func (m *MyMiddleware) handleUnauthenticated(ctx context.Context, isMethodProtec
 func (m *MyMiddleware) generateNewToken(ctx context.Context) (string, error) {
 	newUser, err := m.repo.RegisterUser(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w", err)
 	}
-
+	//nolint:wrapcheck
 	return auth.BuildJWTString(newUser.ID)
 }

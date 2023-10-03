@@ -205,15 +205,17 @@ func saveCert(path string, payload *bytes.Buffer) error {
 func GetTokenFromMetadata(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-
+		//nolint:goerr113
 		return "", fmt.Errorf("not metadata in context")
 	}
 
 	values := md["authorization"]
 	if len(values) == 0 {
+		//nolint:goerr113
 		return "", fmt.Errorf("token not found")
 	}
 
 	token := strings.TrimPrefix(values[0], "Bearer ")
+
 	return token, nil
 }

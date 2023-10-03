@@ -22,7 +22,9 @@ type MyMiddleware struct {
 }
 
 var (
-	once     sync.Once
+	//nolint:gochecknoglobals
+	once sync.Once
+	//nolint:gochecknoglobals
 	instance *MyMiddleware
 )
 
@@ -129,5 +131,6 @@ func (m *MyMiddleware) GrpcRequestLogger(ctx context.Context,
 		zap.String("status code", status.Code().String()),
 		// Дополнительные поля можно добавить по необходимости
 	)
+
 	return resp, err
 }

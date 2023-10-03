@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/models"
@@ -34,16 +35,17 @@ func ProcessBatchURLs(ctx context.Context,
 	var payload *models.BatchURL
 	err := json.Unmarshal(body, &payload)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if len(*payload) < 1 {
+		//nolint:goerr113
 		return nil, errors.New("empty payload")
 	}
 
 	val, err := repo.CreateOrGetBatchFromStorage(ctx, payload, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	for k := range *val {

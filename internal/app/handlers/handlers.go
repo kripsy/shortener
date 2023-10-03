@@ -237,9 +237,6 @@ return
 */
 func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request) {
 	token, _ := utils.GetToken(r)
-	// userID, _ := auth.GetUserID(token)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
 	h.myLogger.Debug("start SaveBatchURLHandler")
 	if r.Method != http.MethodPost || r.Header.Get("Content-Type") != "application/json" {
 		h.myLogger.Debug("Bad req", zap.String("Content-Type", r.Header.Get("Content-Type")),
@@ -258,7 +255,7 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	result, err := usecase.ProcessBatchURLs(ctx, body, h.repository, token, h.globalURL, h.myLogger)
+	result, err := usecase.ProcessBatchURLs(r.Context(), body, h.repository, token, h.globalURL, h.myLogger)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 

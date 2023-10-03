@@ -4,6 +4,7 @@ import (
 	context "context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"time"
@@ -65,7 +66,7 @@ func InitServer(urlRepo string, repo handlers.Repository,
 func (s *Server) SaveURL(ctx context.Context, req *SaveURLRequest) (*SaveURLResponse, error) {
 	token, err := utils.GetTokenFromMetadata(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
 	userID, _ := auth.GetUserID(token)
 	s.MyLogger.Debug("start SaveURL")
@@ -77,11 +78,13 @@ func (s *Server) SaveURL(ctx context.Context, req *SaveURLRequest) (*SaveURLResp
 			isUniqueError = true
 		} else {
 			s.MyLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+
+			return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
 		}
 	}
 
 	result := utils.ReturnURL(val, s.URLRepo)
+
 	return &SaveURLResponse{
 		Result:        result,
 		IsUniqueError: isUniqueError,
@@ -94,7 +97,7 @@ func (s *Server) GetURL(ctx context.Context, req *GetURLRequest) (*GetURLRespons
 	if err != nil {
 		s.MyLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
 
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
 	}
 
 	result := utils.ReturnURL(val, s.URLRepo)
@@ -104,14 +107,13 @@ func (s *Server) GetURL(ctx context.Context, req *GetURLRequest) (*GetURLRespons
 	}, nil
 }
 
-func (s *Server) GetStats(ctx context.Context, req *GetStatsRequest) (*GetStatsResponse, error) {
+func (s *Server) GetStats(ctx context.Context, _ *GetStatsRequest) (*GetStatsResponse, error) {
 	s.MyLogger.Debug("start SaveURL")
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	stats, err := s.Repo.GetStatsFromStorage(ctx)
 	if err != nil {
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
 
 	return &GetStatsResponse{
@@ -124,19 +126,20 @@ func (s *Server) SaveBatchURL(ctx context.Context, req *SaveBatchURLRequest) (*S
 	token, err := utils.GetTokenFromMetadata(ctx)
 
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
 	_, _ = auth.GetUserID(token)
 
 	body, err := json.Marshal(req.UrlBatch)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid request")
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "invalid request"))
 	}
 
 	result, err := usecase.ProcessBatchURLs(ctx, body, s.Repo, token, s.URLRepo, s.MyLogger)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
+	//nolint:asciicheck
 	r := сonvertToSaveBatchURLResponse(result)
 
 	s.MyLogger.Debug("start SaveURL")
@@ -145,7 +148,7 @@ func (s *Server) SaveBatchURL(ctx context.Context, req *SaveBatchURLRequest) (*S
 }
 
 func сonvertToSaveBatchURLResponse(batchURL models.BatchURL) *SaveBatchURLResponse {
-	var responseObjects []*SaveBatchURLResponse_URLObject
+	responseObjects := make([]*SaveBatchURLResponse_URLObject, 0)
 
 	for _, event := range batchURL {
 		responseObject := &SaveBatchURLResponse_URLObject{
