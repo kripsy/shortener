@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +19,7 @@ import (
 	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/application"
 	"github.com/kripsy/shortener/internal/app/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -100,33 +103,47 @@ func main() {
 		if err := srv.Shutdown(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "error shotdown server: %v\n", err)
 		}
+		application.GetAppGrpcServer().GracefulStop()
 		close(connsClosed)
 	}()
 
-	if application.GetAppConfig().EnableHTTPS != "" {
-		l.Debug("creating cert")
-		err = utils.CreateCertificate()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	grp, ctx := errgroup.WithContext(ctx)
 
-			return
+	// start http server
+	grp.Go(func() error {
+		if application.GetAppConfig().EnableHTTPS != "" {
+			l.Debug("creating cert")
+			err = utils.CreateCertificate()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
+				return err
+			}
+			l.Debug("cert has been created")
+
+			return fmt.Errorf("%w", srv.ListenAndServeTLS(utils.ServerCertPath, utils.PrivateKeyPath))
 		}
-		l.Debug("cert has been created")
-		err = srv.ListenAndServeTLS(utils.ServerCertPath, utils.PrivateKeyPath)
+
+		return fmt.Errorf("%w", srv.ListenAndServe())
+	})
+
+	// start grpc server
+	grp.Go(func() error {
+		lis, err := net.Listen("tcp", ":50051") // Выберите другой порт для gRPC сервера
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-
-			return
+			return err
 		}
+		log.Println("Starting gRPC server on :50051")
 
-		return
-	}
-	err = srv.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("%w", application.GetAppGrpcServer().Serve(lis))
+	})
+
+	if err := grp.Wait(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 
 		return
 	}
+
 	<-connsClosed
 	l.Debug("Server Shutdown successfully")
 }

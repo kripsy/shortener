@@ -1,14 +1,18 @@
 package middleware
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/handlers"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 type MyMiddleware struct {
@@ -17,14 +21,21 @@ type MyMiddleware struct {
 	TrustedSubnet *net.IPNet
 }
 
-func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository, ts *net.IPNet) *MyMiddleware {
-	m := &MyMiddleware{
-		MyLogger:      myLogger,
-		repo:          repo,
-		TrustedSubnet: ts,
-	}
+var (
+	once     sync.Once
+	instance *MyMiddleware
+)
 
-	return m
+func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository, ts *net.IPNet) *MyMiddleware {
+	once.Do(func() {
+		instance = &MyMiddleware{
+			MyLogger:      myLogger,
+			repo:          repo,
+			TrustedSubnet: ts,
+		}
+	})
+
+	return instance
 }
 
 // RequestLogger — middleware-логер для входящих HTTP-запросов.
@@ -92,4 +103,31 @@ func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(ow, r)
 	})
+}
+
+// RequestLogger — middleware-логер для входящих HTTP-запросов.
+func (m *MyMiddleware) GrpcRequestLogger(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (interface{}, error) {
+	// Запуск отсчета времени выполнения
+	start := time.Now()
+
+	// Вызов следующего обработчика в цепочке
+	resp, err := handler(ctx, req)
+
+	// Вычисление продолжительности выполнения
+	duration := time.Since(start)
+
+	// Получение статуса ответа
+	status, _ := status.FromError(err)
+
+	// Логирование информации о запросе
+	m.MyLogger.Info("got incoming gRPC request",
+		zap.String("method", info.FullMethod),
+		zap.Int64("duration (Nanoseconds)", duration.Nanoseconds()),
+		zap.String("status code", status.Code().String()),
+		// Дополнительные поля можно добавить по необходимости
+	)
+	return resp, err
 }

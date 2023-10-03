@@ -107,3 +107,6 @@ go tool pprof -http=":9091" ./result.pprof
 
 # Run with tags
 go run -ldflags "-X main.buildVersion=1.0 -X 'main.buildDate=$(date '+%Y-%m-%d %H:%M:%S')' -X main.buildCommit=$(git rev-parse HEAD)" ./cmd/shortener/main.go -l "Debug"
+
+# codegen protobuf
+protoc --proto_path=. --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./internal/app/proto/service.proto
