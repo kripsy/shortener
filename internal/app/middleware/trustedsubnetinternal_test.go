@@ -78,14 +78,14 @@ func TestGrpcTrustedSubnetMiddleware(t *testing.T) {
 	}{
 		{
 			name:          "Trusted IP for GetStats",
-			methodName:    "/Shortener/GetStats",
+			methodName:    "/shortener.v1.Shortener/GetStats",
 			ip:            "192.168.1.10",
 			trustedSubnet: "192.168.1.0/24",
 			expectedError: nil,
 		},
 		{
 			name:          "Untrusted IP for GetStats",
-			methodName:    "/Shortener/GetStats",
+			methodName:    "/shortener.v1.Shortener/GetStats",
 			ip:            "192.168.2.10",
 			trustedSubnet: "192.168.1.0/24",
 			expectedError: status.Error(codes.PermissionDenied, "IP not trusted"),
