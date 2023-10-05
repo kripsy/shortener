@@ -1,11 +1,21 @@
 syntax = "proto3";
 
-option go_package = "pkg/api/shortener";
+package shortener.v1;
 
+option go_package = "pkg/api/shortener/v1";
+
+// ShortenerService provides URL shortening capabilities.
 service Shortener {
+  // SaveURL saves a given URL and returns a shortened version.
   rpc SaveURL(SaveURLRequest) returns (SaveURLResponse);
+
+  // GetURL retrieves the original URL for a given shortened version.
   rpc GetURL(GetURLRequest) returns (GetURLResponse);
+
+  // SaveBatchURL saves a batch of URLs and returns their shortened versions.
   rpc SaveBatchURL(SaveBatchURLRequest) returns (SaveBatchURLResponse);
+
+  // GetStats retrieves statistics about saved URLs and users.
   rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
 }
 

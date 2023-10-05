@@ -16,7 +16,7 @@ import (
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/usecase"
 	"github.com/kripsy/shortener/internal/app/utils"
-	pb "github.com/kripsy/shortener/pkg/api/shortener/gen"
+	pb "github.com/kripsy/shortener/pkg/api/shortener/v1/gen"
 	"go.uber.org/zap"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.23.4
-// source: pkg/api/shortener/service.proto
+// source: pkg/api/shortener/v1/service.proto
 
-package shortener
+package v1
 
 import (
 	context "context"
@@ -19,19 +19,23 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Shortener_SaveURL_FullMethodName      = "/Shortener/SaveURL"
-	Shortener_GetURL_FullMethodName       = "/Shortener/GetURL"
-	Shortener_SaveBatchURL_FullMethodName = "/Shortener/SaveBatchURL"
-	Shortener_GetStats_FullMethodName     = "/Shortener/GetStats"
+	Shortener_SaveURL_FullMethodName      = "/shortener.v1.Shortener/SaveURL"
+	Shortener_GetURL_FullMethodName       = "/shortener.v1.Shortener/GetURL"
+	Shortener_SaveBatchURL_FullMethodName = "/shortener.v1.Shortener/SaveBatchURL"
+	Shortener_GetStats_FullMethodName     = "/shortener.v1.Shortener/GetStats"
 )
 
 // ShortenerClient is the client API for Shortener service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShortenerClient interface {
+	// SaveURL saves a given URL and returns a shortened version.
 	SaveURL(ctx context.Context, in *SaveURLRequest, opts ...grpc.CallOption) (*SaveURLResponse, error)
+	// GetURL retrieves the original URL for a given shortened version.
 	GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error)
+	// SaveBatchURL saves a batch of URLs and returns their shortened versions.
 	SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error)
+	// GetStats retrieves statistics about saved URLs and users.
 	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
@@ -83,9 +87,13 @@ func (c *shortenerClient) GetStats(ctx context.Context, in *GetStatsRequest, opt
 // All implementations must embed UnimplementedShortenerServer
 // for forward compatibility
 type ShortenerServer interface {
+	// SaveURL saves a given URL and returns a shortened version.
 	SaveURL(context.Context, *SaveURLRequest) (*SaveURLResponse, error)
+	// GetURL retrieves the original URL for a given shortened version.
 	GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error)
+	// SaveBatchURL saves a batch of URLs and returns their shortened versions.
 	SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error)
+	// GetStats retrieves statistics about saved URLs and users.
 	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
 	mustEmbedUnimplementedShortenerServer()
 }
@@ -195,7 +203,7 @@ func _Shortener_GetStats_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Shortener_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Shortener",
+	ServiceName: "shortener.v1.Shortener",
 	HandlerType: (*ShortenerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -216,5 +224,5 @@ var Shortener_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/api/shortener/service.proto",
+	Metadata: "pkg/api/shortener/v1/service.proto",
 }
