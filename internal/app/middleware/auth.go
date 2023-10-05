@@ -165,6 +165,7 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context,
 		if err != nil {
 			return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "internal error to create token"))
 		}
+
 		return handler(ctx, req)
 	}
 
@@ -175,6 +176,7 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context,
 		if err != nil {
 			return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "internal error to create token"))
 		}
+
 		return handler(ctx, req)
 	}
 
