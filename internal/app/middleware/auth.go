@@ -148,7 +148,7 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context,
 	m.MyLogger.Debug("Start JWTInterceptor")
 
 	protectedMethods := []string{
-		"/Shortener/MethodName", // Замените на имя вашего сервиса и метода
+		"/Shortener/MethodName",
 	}
 
 	isMethodProtected := utils.StingContains(protectedMethods, info.FullMethod)
@@ -165,14 +165,17 @@ func (m *MyMiddleware) GrpcJWTInterceptor(ctx context.Context,
 		if err != nil {
 			return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "internal error to create token"))
 		}
-
 		return handler(ctx, req)
 	}
 
 	token := strings.TrimPrefix(values[0], "Bearer ")
 	tokenIsValid, _ := auth.IsTokenValid(token)
 	if !tokenIsValid {
-		return m.handleUnauthenticated(ctx, isMethodProtected)
+		ctx, err := m.handleUnauthenticated(ctx, isMethodProtected)
+		if err != nil {
+			return nil, fmt.Errorf("%w", status.Error(codes.Unauthenticated, "internal error to create token"))
+		}
+		return handler(ctx, req)
 	}
 
 	m.MyLogger.Debug("tokenIsValid", zap.Bool("msg", tokenIsValid))
@@ -195,10 +198,10 @@ func (m *MyMiddleware) handleUnauthenticated(ctx context.Context, isMethodProtec
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "failed to generate token"))
 	}
-
+	fmt.Println(newToken)
 	newMD := metadata.Pairs("authorization", "Bearer "+newToken)
 	newCtx := metadata.NewOutgoingContext(ctx, newMD)
-	err = grpc.SendHeader(ctx, newMD)
+	err = grpc.SendHeader(newCtx, newMD)
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, "failed to set token"))
 	}

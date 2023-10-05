@@ -117,10 +117,8 @@ func (m *MyMiddleware) GrpcRequestLogger(ctx context.Context,
 	handler grpc.UnaryHandler) (interface{}, error) {
 	// Запуск отсчета времени выполнения
 	start := time.Now()
-
 	// Вызов следующего обработчика в цепочке
 	resp, err := handler(ctx, req)
-
 	// Вычисление продолжительности выполнения
 	duration := time.Since(start)
 

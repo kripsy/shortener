@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: service.proto
 
-package gen
+package shortenerv1
 
 import (
 	context "context"

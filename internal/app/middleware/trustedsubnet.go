@@ -57,7 +57,7 @@ func (m *MyMiddleware) GrpcTrustedSubnetMiddleware(ctx context.Context,
 
 	methodName := info.FullMethod
 	m.MyLogger.Debug("method ", zap.String("msg", methodName))
-	if methodName != "/Shortener/GetStats" {
+	if methodName != "/shortener.v1.Shortener/GetStats" {
 		return handler(ctx, req)
 	}
 	peerInfo, ok := peer.FromContext(ctx)

@@ -9,6 +9,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/bufbuild/protovalidate-go"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/kripsy/shortener/internal/app/auth"
 	"github.com/kripsy/shortener/internal/app/handlers"
@@ -70,6 +71,15 @@ func (s *Server) SaveURL(ctx context.Context, req *pb.SaveURLRequest) (*pb.SaveU
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
+	v, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
+	if err = v.Validate(req); err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
+	}
+
 	userID, _ := auth.GetUserID(token)
 	s.MyLogger.Debug("start SaveURL")
 	isUniqueError := false
@@ -95,6 +105,16 @@ func (s *Server) SaveURL(ctx context.Context, req *pb.SaveURLRequest) (*pb.SaveU
 
 func (s *Server) GetURL(ctx context.Context, req *pb.GetURLRequest) (*pb.GetURLResponse, error) {
 	s.MyLogger.Debug("start SaveURL")
+
+	v, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
+	if err = v.Validate(req); err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
+	}
+
 	val, err := s.Repo.GetOriginalURLFromStorage(ctx, req.Url)
 	if err != nil {
 		s.MyLogger.Debug("Error CreateOrGetFromStorage", zap.String("error CreateOrGetFromStorage", err.Error()))
@@ -129,6 +149,15 @@ func (s *Server) SaveBatchURL(ctx context.Context, req *pb.SaveBatchURLRequest) 
 
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
+	v, err := protovalidate.New()
+	if err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
+	}
+
+	if err = v.Validate(req); err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, err.Error()))
 	}
 	_, _ = auth.GetUserID(token)
 
