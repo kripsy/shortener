@@ -22,6 +22,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	status "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Server struct {
@@ -108,7 +109,7 @@ func (s *Server) GetURL(ctx context.Context, req *pb.GetURLRequest) (*pb.GetURLR
 	}, nil
 }
 
-func (s *Server) GetStats(ctx context.Context, _ *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
+func (s *Server) GetStats(ctx context.Context, _ *emptypb.Empty) (*pb.GetStatsResponse, error) {
 	s.MyLogger.Debug("start SaveURL")
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()

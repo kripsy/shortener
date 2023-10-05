@@ -2,7 +2,9 @@ syntax = "proto3";
 
 package shortener.v1;
 
-option go_package = "pkg/api/shortener/v1";
+import "google/protobuf/empty.proto";
+
+option go_package = "pkg/api/shortener/v1/gen";
 
 // ShortenerService provides URL shortening capabilities.
 service Shortener {
@@ -16,7 +18,7 @@ service Shortener {
   rpc SaveBatchURL(SaveBatchURLRequest) returns (SaveBatchURLResponse);
 
   // GetStats retrieves statistics about saved URLs and users.
-  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+  rpc GetStats(google.protobuf.Empty) returns (GetStatsResponse);
 }
 
 message SaveURLRequest { string url = 1; }
@@ -42,8 +44,6 @@ message SaveBatchURLResponse {
   }
   repeated URLObject url_batch = 1;
 }
-
-message GetStatsRequest {}
 
 message GetStatsResponse {
   int32 urls = 1;
