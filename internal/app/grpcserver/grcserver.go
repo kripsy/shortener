@@ -1,4 +1,4 @@
-package proto
+package grpcserver
 
 import (
 	context "context"
@@ -16,6 +16,7 @@ import (
 	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/kripsy/shortener/internal/app/usecase"
 	"github.com/kripsy/shortener/internal/app/utils"
+	pb "github.com/kripsy/shortener/pkg/api/shortener/gen"
 	"go.uber.org/zap"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -24,7 +25,7 @@ import (
 )
 
 type Server struct {
-	UnimplementedShortenerServer
+	pb.UnimplementedShortenerServer
 	MyLogger *zap.Logger
 	URLRepo  string
 	Repo     handlers.Repository
@@ -58,12 +59,12 @@ func InitServer(urlRepo string, repo handlers.Repository,
 		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
 	}
 
-	RegisterShortenerServer(srv, s)
+	pb.RegisterShortenerServer(srv, s)
 
 	return srv, nil
 }
 
-func (s *Server) SaveURL(ctx context.Context, req *SaveURLRequest) (*SaveURLResponse, error) {
+func (s *Server) SaveURL(ctx context.Context, req *pb.SaveURLRequest) (*pb.SaveURLResponse, error) {
 	token, err := utils.GetTokenFromMetadata(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
@@ -85,13 +86,13 @@ func (s *Server) SaveURL(ctx context.Context, req *SaveURLRequest) (*SaveURLResp
 
 	result := utils.ReturnURL(val, s.URLRepo)
 
-	return &SaveURLResponse{
+	return &pb.SaveURLResponse{
 		Result:        result,
 		IsUniqueError: isUniqueError,
 	}, nil
 }
 
-func (s *Server) GetURL(ctx context.Context, req *GetURLRequest) (*GetURLResponse, error) {
+func (s *Server) GetURL(ctx context.Context, req *pb.GetURLRequest) (*pb.GetURLResponse, error) {
 	s.MyLogger.Debug("start SaveURL")
 	val, err := s.Repo.GetOriginalURLFromStorage(ctx, req.Url)
 	if err != nil {
@@ -102,12 +103,12 @@ func (s *Server) GetURL(ctx context.Context, req *GetURLRequest) (*GetURLRespons
 
 	result := utils.ReturnURL(val, s.URLRepo)
 
-	return &GetURLResponse{
+	return &pb.GetURLResponse{
 		Url: result,
 	}, nil
 }
 
-func (s *Server) GetStats(ctx context.Context, _ *GetStatsRequest) (*GetStatsResponse, error) {
+func (s *Server) GetStats(ctx context.Context, _ *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
 	s.MyLogger.Debug("start SaveURL")
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
@@ -116,13 +117,13 @@ func (s *Server) GetStats(ctx context.Context, _ *GetStatsRequest) (*GetStatsRes
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
 
-	return &GetStatsResponse{
+	return &pb.GetStatsResponse{
 		Urls:  int32(stats.URLs),
 		Users: int32(stats.Users),
 	}, nil
 }
 
-func (s *Server) SaveBatchURL(ctx context.Context, req *SaveBatchURLRequest) (*SaveBatchURLResponse, error) {
+func (s *Server) SaveBatchURL(ctx context.Context, req *pb.SaveBatchURLRequest) (*pb.SaveBatchURLResponse, error) {
 	token, err := utils.GetTokenFromMetadata(ctx)
 
 	if err != nil {
@@ -147,18 +148,18 @@ func (s *Server) SaveBatchURL(ctx context.Context, req *SaveBatchURLRequest) (*S
 	return r, nil
 }
 
-func сonvertToSaveBatchURLResponse(batchURL models.BatchURL) *SaveBatchURLResponse {
-	responseObjects := make([]*SaveBatchURLResponse_URLObject, 0)
+func сonvertToSaveBatchURLResponse(batchURL models.BatchURL) *pb.SaveBatchURLResponse {
+	responseObjects := make([]*pb.SaveBatchURLResponse_URLObject, 0)
 
 	for _, event := range batchURL {
-		responseObject := &SaveBatchURLResponse_URLObject{
+		responseObject := &pb.SaveBatchURLResponse_URLObject{
 			CorrelationId: event.CorrelationID,
 			ShortUrl:      event.ShortURL,
 		}
 		responseObjects = append(responseObjects, responseObject)
 	}
 
-	return &SaveBatchURLResponse{
+	return &pb.SaveBatchURLResponse{
 		UrlBatch: responseObjects,
 	}
 }

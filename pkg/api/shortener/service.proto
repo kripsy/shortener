@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "internal/app/proto";
+option go_package = "pkg/api/shortener";
 
 service Shortener {
   rpc SaveURL(SaveURLRequest) returns (SaveURLResponse);

@@ -8,7 +8,7 @@ import (
 
 	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/config"
-	"github.com/kripsy/shortener/internal/app/proto"
+	"github.com/kripsy/shortener/internal/app/grpcserver"
 	"google.golang.org/grpc"
 
 	//nolint:depguard
@@ -113,7 +113,7 @@ func NewApp(_ context.Context) (*App, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	gsrv, err := proto.InitServer(cfg.URLPrefixRepo, repo, myLogger, cfg.TrustedSubnet, cfg.EnableHTTPS != "")
+	gsrv, err := grpcserver.InitServer(cfg.URLPrefixRepo, repo, myLogger, cfg.TrustedSubnet, cfg.EnableHTTPS != "")
 
 	if err != nil {
 		myLogger.Debug("Failed init grpc server", zap.String("msg", err.Error()))
