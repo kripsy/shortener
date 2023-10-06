@@ -37,8 +37,6 @@ type ShortenerServiceClient interface {
 	// SaveBatchURL saves a batch of URLs and returns their shortened versions.
 	SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error)
 	// GetStats retrieves statistics about saved URLs and users.
-	// @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE Решено использовать
-	// google.protobuf.Empty для этого RPC
 	GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
@@ -97,8 +95,8 @@ type ShortenerServiceServer interface {
 	// SaveBatchURL saves a batch of URLs and returns their shortened versions.
 	SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error)
 	// GetStats retrieves statistics about saved URLs and users.
-	// @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE Решено использовать
-	// google.protobuf.Empty для этого RPC
+	// @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE wanna use
+	// google.protobuf.Empty
 	GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error)
 	mustEmbedUnimplementedShortenerServiceServer()
 }
