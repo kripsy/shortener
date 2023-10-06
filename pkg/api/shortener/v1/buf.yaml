@@ -6,7 +6,4 @@ lint:
   use:
     - DEFAULT
 
-  except:
-    - RPC_REQUEST_RESPONSE_UNIQUE
-  ignore:
-    - pkg/api/shortener/v1/service.proto:RPC_REQUEST_RESPONSE_UNIQUE
+  rpc_allow_google_protobuf_empty_requests: true
