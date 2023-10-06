@@ -1,27 +1,43 @@
 package middleware
 
 import (
+	"context"
+	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/handlers"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 type MyMiddleware struct {
-	MyLogger *zap.Logger
-	repo     handlers.Repository
+	MyLogger      *zap.Logger
+	repo          handlers.Repository
+	TrustedSubnet *net.IPNet
 }
 
-func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository) *MyMiddleware {
-	m := &MyMiddleware{
-		MyLogger: myLogger,
-		repo:     repo,
-	}
+var (
+	//nolint:gochecknoglobals
+	once sync.Once
+	//nolint:gochecknoglobals
+	instance *MyMiddleware
+)
 
-	return m
+func InitMyMiddleware(myLogger *zap.Logger, repo handlers.Repository, ts *net.IPNet) *MyMiddleware {
+	once.Do(func() {
+		instance = &MyMiddleware{
+			MyLogger:      myLogger,
+			repo:          repo,
+			TrustedSubnet: ts,
+		}
+	})
+
+	return instance
 }
 
 // RequestLogger — middleware-логер для входящих HTTP-запросов.
@@ -65,15 +81,18 @@ func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 		}
 		m.MyLogger.Debug("continue with compress")
 		acceptEncoding := r.Header.Get("Accept-Encoding")
+
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip {
 			m.MyLogger.Debug("Accept-Encoding gzip")
 			cw := newCompressWriter(w)
 			ow = cw
+			ow.Header().Set("Content-Encoding", "gzip")
 			defer cw.Close()
 		}
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
+
 		if sendsGzip {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
 			m.MyLogger.Debug("Content-Encoding gzip")
@@ -89,4 +108,32 @@ func (m *MyMiddleware) CompressMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(ow, r)
 	})
+}
+
+// RequestLogger — middleware-логер для входящих HTTP-запросов.
+func (m *MyMiddleware) GrpcRequestLogger(ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler) (interface{}, error) {
+	// Запуск отсчета времени выполнения
+	start := time.Now()
+	// Вызов следующего обработчика в цепочке
+	ctx, calcel := context.WithTimeout(ctx, time.Second)
+	defer calcel()
+	resp, err := handler(ctx, req)
+	// Вычисление продолжительности выполнения
+	duration := time.Since(start)
+
+	// Получение статуса ответа
+	status, _ := status.FromError(err)
+
+	// Логирование информации о запросе
+	m.MyLogger.Info("got incoming gRPC request",
+		zap.String("method", info.FullMethod),
+		zap.Int64("duration (Nanoseconds)", duration.Nanoseconds()),
+		zap.String("status code", status.Code().String()),
+		// Дополнительные поля можно добавить по необходимости
+	)
+
+	return resp, err
 }

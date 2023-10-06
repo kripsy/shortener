@@ -166,3 +166,27 @@ func (m InMemoryStorage) DeleteSliceURLFromStorage(_ context.Context, _ []string
 
 	return nil
 }
+
+func (m InMemoryStorage) GetStatsFromStorage(_ context.Context) (*models.Stats, error) {
+	stats := models.Stats{
+		URLs:  0,
+		Users: 0,
+	}
+	urls := make(map[string]bool)
+	users := make(map[int]bool)
+	for _, v := range m.storage {
+		_, URLExists := urls[v.OriginalURL]
+		if !URLExists {
+			urls[v.OriginalURL] = true
+			stats.URLs++
+		}
+
+		_, UserExists := users[v.UserID]
+		if !UserExists {
+			users[v.UserID] = true
+			stats.Users++
+		}
+	}
+
+	return &stats, nil
+}

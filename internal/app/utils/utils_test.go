@@ -1,11 +1,15 @@
 package utils_test
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/kripsy/shortener/internal/app/utils"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/metadata"
 )
 
 func BenchmarkCreateShortURL(b *testing.B) {
@@ -174,4 +178,105 @@ func TestStingContains(t *testing.T) {
 			assert.Equal(t, res, tt.want)
 		})
 	}
+}
+
+func TestGetTokenFromMetadata(t *testing.T) {
+	t.Run("valid token", func(t *testing.T) {
+		expectedToken := "test_token"
+		md := metadata.Pairs("authorization", "Bearer "+expectedToken)
+		ctx := metadata.NewIncomingContext(context.Background(), md)
+
+		token, err := utils.GetTokenFromMetadata(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedToken, token)
+	})
+
+	t.Run("no metadata", func(t *testing.T) {
+		ctx := context.Background()
+
+		_, err := utils.GetTokenFromMetadata(ctx)
+		assert.Error(t, err)
+		assert.True(t, strings.Contains(err.Error(), "not metadata in context"))
+	})
+
+	t.Run("no token", func(t *testing.T) {
+		md := metadata.Pairs("other_header", "value")
+		ctx := metadata.NewIncomingContext(context.Background(), md)
+
+		_, err := utils.GetTokenFromMetadata(ctx)
+		assert.Error(t, err)
+		assert.True(t, strings.Contains(err.Error(), "token not found"))
+	})
+}
+
+func TestCreateCertificate(t *testing.T) {
+	if _, err := os.Stat("./cert"); os.IsNotExist(err) {
+		err := os.Mkdir("./cert", 0755)
+		assert.NoError(t, err)
+	}
+	defer os.Remove(utils.ServerCertPath)
+	defer os.Remove(utils.PrivateKeyPath)
+	defer os.RemoveAll("./cert")
+	err := utils.CreateCertificate()
+	assert.NoError(t, err)
+
+	serverCertInfo, err := os.Stat(utils.ServerCertPath)
+	assert.NoError(t, err)
+	assert.NotZero(t, serverCertInfo.Size())
+
+	privateKeyInfo, err := os.Stat(utils.PrivateKeyPath)
+	assert.NoError(t, err)
+	assert.NotZero(t, privateKeyInfo.Size())
+}
+
+func TestReturnURL(t *testing.T) {
+	tests := []struct {
+		endpoint  string
+		globalURL string
+		expected  string
+	}{
+		{
+			endpoint:  "testEndpoint",
+			globalURL: "http://example.com",
+			expected:  "http://example.com/testEndpoint",
+		},
+		{
+			endpoint:  "anotherEndpoint",
+			globalURL: "https://example.org",
+			expected:  "https://example.org/anotherEndpoint",
+		},
+		{
+			endpoint:  "",
+			globalURL: "https://example.org",
+			expected:  "https://example.org/",
+		},
+		{
+			endpoint:  "testEndpoint",
+			globalURL: "",
+			expected:  "/testEndpoint",
+		},
+	}
+
+	for _, tt := range tests {
+		result := utils.ReturnURL(tt.endpoint, tt.globalURL)
+		assert.Equal(t, tt.expected, result)
+	}
+}
+
+func TestCreateShortURLWithoutFmt(t *testing.T) {
+	shortURL, err := utils.CreateShortURLWithoutFmt()
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(shortURL))
+	anotherShortURL, err := utils.CreateShortURLWithoutFmt()
+	assert.NoError(t, err)
+	assert.NotEqual(t, shortURL, anotherShortURL)
+}
+
+func TestCreateShortURL(t *testing.T) {
+	shortURL, err := utils.CreateShortURL()
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(shortURL))
+	anotherShortURL, err := utils.CreateShortURL()
+	assert.NoError(t, err)
+	assert.NotEqual(t, shortURL, anotherShortURL)
 }

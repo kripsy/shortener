@@ -8,6 +8,9 @@ import (
 
 	//nolint:depguard
 	"github.com/kripsy/shortener/internal/app/config"
+	"github.com/kripsy/shortener/internal/app/grpcserver"
+	"google.golang.org/grpc"
+
 	//nolint:depguard
 	database "github.com/kripsy/shortener/internal/app/db"
 
@@ -30,10 +33,11 @@ import (
 )
 
 type App struct {
-	appConfig *config.Config
-	appLogger *zap.Logger
-	appServer *server.MyServer
-	appRepo   handlers.Repository
+	appConfig     *config.Config
+	appLogger     *zap.Logger
+	appServer     *server.MyServer
+	appRepo       handlers.Repository
+	appGrpcServer *grpc.Server
 }
 
 func (a *App) GetAppServer() *server.MyServer {
@@ -51,6 +55,10 @@ func (a *App) GetAppRepo() handlers.Repository {
 
 func (a *App) GetAppLogger() *zap.Logger {
 	return a.appLogger
+}
+
+func (a App) GetAppGrpcServer() *grpc.Server {
+	return a.appGrpcServer
 }
 
 func NewApp(_ context.Context) (*App, error) {
@@ -97,7 +105,7 @@ func NewApp(_ context.Context) (*App, error) {
 		repo = inmemory
 	}
 
-	srv, err := server.InitServer(cfg.URLPrefixRepo, repo, myLogger)
+	srv, err := server.InitServer(cfg.URLPrefixRepo, repo, myLogger, cfg.TrustedSubnet)
 
 	if err != nil {
 		myLogger.Debug("Failed init server", zap.String("msg", err.Error()))
@@ -105,10 +113,21 @@ func NewApp(_ context.Context) (*App, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
+	gsrv, err := grpcserver.InitServer(cfg.URLPrefixRepo, repo, myLogger, cfg.TrustedSubnet, cfg.EnableHTTPS != "")
+
+	if err != nil {
+		myLogger.Debug("Failed init grpc server", zap.String("msg", err.Error()))
+
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	myLogger.Debug("current trusted network", zap.Any("msg", cfg.TrustedSubnet))
+
 	return &App{
-		appConfig: cfg,
-		appLogger: myLogger,
-		appServer: srv,
-		appRepo:   repo,
+		appConfig:     cfg,
+		appLogger:     myLogger,
+		appServer:     srv,
+		appRepo:       repo,
+		appGrpcServer: gsrv,
 	}, nil
 }

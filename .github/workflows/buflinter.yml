@@ -1,0 +1,26 @@
+name: Buf Lint
+
+on:
+  push:
+    paths:
+      - "**.proto"
+  pull_request:
+    paths:
+      - "**.proto"
+
+jobs:
+  buf-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install buf
+        run: |
+          VERSION="1.27.0" 
+          curl -sSL "https://github.com/bufbuild/buf/releases/download/v${VERSION}/buf-Linux-x86_64" -o buf
+          chmod +x buf
+          sudo mv buf /usr/local/bin
+
+      - name: Run buf lint
+        run: buf lint

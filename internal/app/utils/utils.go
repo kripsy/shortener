@@ -4,6 +4,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -19,8 +20,10 @@ import (
 	"strings"
 	"time"
 
-	//nolint:depguard
+	pb "github.com/kripsy/shortener/gen/pkg/api/shortener/v1"
+	"github.com/kripsy/shortener/internal/app/models"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -197,4 +200,38 @@ func saveCert(path string, payload *bytes.Buffer) error {
 	}
 
 	return nil
+}
+
+func GetTokenFromMetadata(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		//nolint:goerr113
+		return "", fmt.Errorf("not metadata in context")
+	}
+
+	values := md["authorization"]
+	if len(values) == 0 {
+		//nolint:goerr113
+		return "", fmt.Errorf("token not found")
+	}
+
+	token := strings.TrimPrefix(values[0], "Bearer ")
+
+	return token, nil
+}
+
+func Convert2BatchURLResponse(batchURL models.BatchURL) *pb.SaveBatchURLResponse {
+	responseObjects := make([]*pb.SaveBatchURLResponse_URLObject, 0)
+
+	for _, event := range batchURL {
+		responseObject := &pb.SaveBatchURLResponse_URLObject{
+			CorrelationId: event.CorrelationID,
+			ShortUrl:      event.ShortURL,
+		}
+		responseObjects = append(responseObjects, responseObject)
+	}
+
+	return &pb.SaveBatchURLResponse{
+		UrlBatch: responseObjects,
+	}
 }

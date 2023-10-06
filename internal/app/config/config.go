@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 )
@@ -45,6 +46,10 @@ type Config struct {
 
 	// ConfigFilePath is a field with path to the config file
 	ConfigFilePath string
+
+	// TrustedSubnet is a field that trusted subnet defines the network
+	// for accessing the legal entity with network protection
+	TrustedSubnet *net.IPNet
 }
 
 // InitConfig return a pointer Config.
@@ -71,6 +76,8 @@ func InitConfig() *Config {
 	enableHTTPS := flag.String("s", "", "set tls encryption... Or use ENABLE_HTTPS env")
 
 	configFilePath := flag.String("c", "", "set filepath for config... Or use CONFIG env")
+
+	trustedSubnet := flag.String("t", "", "set trusted subnet... Or use TRUSTED_SUBNET env")
 
 	flag.Parse()
 
@@ -102,17 +109,23 @@ func InitConfig() *Config {
 		*configFilePath = envConfigFilePath
 	}
 
+	if envTrustedSubnet := os.Getenv("TRUSTED_SUBNET"); envTrustedSubnet != "" {
+		*trustedSubnet = envTrustedSubnet
+	}
+
 	if *configFilePath != "" {
 		tempURLServer,
 			tempURLPrefixRepo,
 			tempDatabaseDsn,
 			tempFileStoragePath,
 			tempEnableHTTPS,
+			tempTrustedSubnet,
 			err := updateConfigAttrFromFile(*configFilePath,
 			*URLServer,
 			*URLPrefixRepo,
 			*databaseDsn,
 			*fileStoragePath,
+			*trustedSubnet,
 			*enableHTTPS)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -122,6 +135,7 @@ func InitConfig() *Config {
 			*databaseDsn = tempDatabaseDsn
 			*fileStoragePath = tempFileStoragePath
 			*enableHTTPS = tempEnableHTTPS
+			*trustedSubnet = tempTrustedSubnet
 		}
 	}
 
@@ -139,6 +153,12 @@ func InitConfig() *Config {
 	}
 	*URLPrefixRepo = setHTTPS(*URLPrefixRepo, *enableHTTPS)
 
+	var ts *net.IPNet
+	_, ipNet, err := net.ParseCIDR(*trustedSubnet)
+	if err == nil {
+		ts = ipNet
+	}
+
 	return &Config{
 		URLServer:       *URLServer,
 		URLPrefixRepo:   *URLPrefixRepo,
@@ -148,6 +168,7 @@ func InitConfig() *Config {
 		EnableHTTPS:     *enableHTTPS,
 		RepositoryType:  repositoryType,
 		ConfigFilePath:  *configFilePath,
+		TrustedSubnet:   ts,
 	}
 }
 
@@ -156,7 +177,9 @@ func updateConfigAttrFromFile(path string,
 	urlPrefixRepo,
 	databaseDsn,
 	fileStoragePath,
-	enableHTTPS string) (string,
+	enableHTTPS,
+	trustedSubnet string) (string,
+	string,
 	string,
 	string,
 	string,
@@ -170,20 +193,21 @@ func updateConfigAttrFromFile(path string,
 		"database_dsn":      databaseDsn,
 		"file_storage_path": fileStoragePath,
 		"enable_https":      enableHTTPS,
+		"trusted_subnet":    trustedSubnet,
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Printf("err read config file %v ", err)
 
-		return "", "", "", "", "", fmt.Errorf("%w", err)
+		return "", "", "", "", "", "", fmt.Errorf("%w", err)
 	}
 	cfg := map[string]interface{}{}
 	err = json.Unmarshal(data, &cfg)
 	if err != nil {
 		fmt.Printf("error unmarshall config %v: ", err)
 
-		return "", "", "", "", "", fmt.Errorf("error unmarshall config %w", err)
+		return "", "", "", "", "", "", fmt.Errorf("error unmarshall config %w", err)
 	}
 
 	for k, v := range inputParams {
@@ -210,6 +234,7 @@ func updateConfigAttrFromFile(path string,
 		inputParams["database_dsn"],
 		inputParams["file_storage_path"],
 		inputParams["enable_https"],
+		inputParams["trusted_subnet"],
 		nil
 }
 

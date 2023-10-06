@@ -294,3 +294,31 @@ func (fs *FileStorage) DeleteSliceURLFromStorage(_ context.Context, _ []string, 
 
 	return nil
 }
+
+func (fs *FileStorage) GetStatsFromStorage(_ context.Context) (*models.Stats, error) {
+	stats := models.Stats{
+		URLs:  0,
+		Users: 0,
+	}
+	urls := make(map[string]bool)
+	users := make(map[int]bool)
+	events, err := fs.readEventsFromFile()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	for _, v := range events {
+		_, URLExists := urls[v.OriginalURL]
+		if !URLExists {
+			urls[v.OriginalURL] = true
+			stats.URLs++
+		}
+
+		_, UserExists := users[v.UserID]
+		if !UserExists {
+			users[v.UserID] = true
+			stats.Users++
+		}
+	}
+
+	return &stats, nil
+}

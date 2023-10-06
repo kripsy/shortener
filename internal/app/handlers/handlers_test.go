@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -470,6 +471,69 @@ func TestDeleteBatchURLHandler(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestGetInternalStats(t *testing.T) {
+	paramTest := getParamsForTest()
+
+	type want struct {
+		contentType string
+		statusCode  int
+	}
+
+	tests := []struct {
+		name        string
+		request     string
+		methodType  string
+		contentType string
+		want        want
+	}{
+		{
+			name:        "First success get stats",
+			request:     "/",
+			methodType:  http.MethodGet,
+			contentType: "application/json",
+			want: want{
+				contentType: "application/json",
+				statusCode:  200,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mdb := mocks.NewMockRepository(ctrl)
+			mdb.EXPECT().GetStatsFromStorage(gomock.Any()).Return(&models.Stats{
+				URLs:  10,
+				Users: 10,
+			}, nil)
+
+			request, err := http.NewRequestWithContext(context.Background(), tt.methodType, tt.request, nil)
+			assert.NoError(t, err, "error create request")
+
+			w := httptest.NewRecorder()
+			ht, err := handlers.APIHandlerInit(mdb, paramTest.testPrefixAddr, paramTest.testLogger)
+			assert.NoError(t, err, "error create api handler")
+
+			h := ht.GetInternalStats
+			h(w, request)
+
+			result := w.Result()
+
+			defer result.Body.Close()
+
+			resp, err := io.ReadAll(result.Body)
+			assert.NoError(t, err, "error read body response")
+
+			if tt.want.statusCode == http.StatusOK {
+				var stats models.Stats
+				err = json.Unmarshal(resp, &stats)
+				assert.NoError(t, err, "error unmarshall resp")
+			}
 		})
 	}
 }

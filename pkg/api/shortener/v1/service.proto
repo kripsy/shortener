@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package pkg.api.shortener.v1;
+
+import "google/protobuf/empty.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/kripsy/shortener/pkg/api/shortener";
+
+// ShortenerService provides URL shortening capabilities.
+service ShortenerService {
+  // SaveURL saves a given URL and returns a shortened version.
+  rpc SaveURL(SaveURLRequest) returns (SaveURLResponse);
+
+  // GetURL retrieves the original URL for a given shortened version.
+  rpc GetURL(GetURLRequest) returns (GetURLResponse);
+
+  // SaveBatchURL saves a batch of URLs and returns their shortened versions.
+  rpc SaveBatchURL(SaveBatchURLRequest) returns (SaveBatchURLResponse);
+
+  // GetStats retrieves statistics about saved URLs and users.
+  // @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE wanna use
+  // google.protobuf.Empty
+  rpc GetStats(google.protobuf.Empty) returns (GetStatsResponse);
+}
+
+message SaveURLRequest {
+  string url = 1 [ (buf.validate.field).string.min_len = 1 ];
+}
+message SaveURLResponse {
+  string result = 1 [ (buf.validate.field).string.min_len = 1 ];
+  bool is_unique_error = 2;
+}
+
+message GetURLRequest {
+  string url = 1 [ (buf.validate.field).string.min_len = 1 ];
+}
+message GetURLResponse {
+  string url = 1 [ (buf.validate.field).string.min_len = 1 ];
+}
+message SaveBatchURLRequest {
+  message URLObject {
+    string correlation_id = 1;
+    string original_url = 2 [ (buf.validate.field).string.min_len = 1 ];
+  }
+  repeated URLObject url_batch = 1;
+}
+
+message SaveBatchURLResponse {
+  message URLObject {
+    string correlation_id = 1;
+    string short_url = 2 [ (buf.validate.field).string.min_len = 1 ];
+  }
+  repeated URLObject url_batch = 1;
+}
+
+message GetStatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}
