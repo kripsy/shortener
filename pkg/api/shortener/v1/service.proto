@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package api.shortener.v1;
+package pkg.api.shortener.v1;
 
 import "google/protobuf/empty.proto";
 import "buf/validate/validate.proto";
@@ -19,6 +19,8 @@ service ShortenerService {
   rpc SaveBatchURL(SaveBatchURLRequest) returns (SaveBatchURLResponse);
 
   // GetStats retrieves statistics about saved URLs and users.
+  // @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE Решено использовать
+  // google.protobuf.Empty для этого RPC
   rpc GetStats(google.protobuf.Empty) returns (GetStatsResponse);
 }
 
@@ -27,7 +29,7 @@ message SaveURLRequest {
 }
 message SaveURLResponse {
   string result = 1 [ (buf.validate.field).string.min_len = 1 ];
-  bool isUniqueError = 2;
+  bool is_unique_error = 2;
 }
 
 message GetURLRequest {

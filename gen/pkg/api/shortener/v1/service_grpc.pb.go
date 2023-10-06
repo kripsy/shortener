@@ -20,10 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ShortenerService_SaveURL_FullMethodName      = "/api.shortener.v1.ShortenerService/SaveURL"
-	ShortenerService_GetURL_FullMethodName       = "/api.shortener.v1.ShortenerService/GetURL"
-	ShortenerService_SaveBatchURL_FullMethodName = "/api.shortener.v1.ShortenerService/SaveBatchURL"
-	ShortenerService_GetStats_FullMethodName     = "/api.shortener.v1.ShortenerService/GetStats"
+	ShortenerService_SaveURL_FullMethodName      = "/pkg.api.shortener.v1.ShortenerService/SaveURL"
+	ShortenerService_GetURL_FullMethodName       = "/pkg.api.shortener.v1.ShortenerService/GetURL"
+	ShortenerService_SaveBatchURL_FullMethodName = "/pkg.api.shortener.v1.ShortenerService/SaveBatchURL"
+	ShortenerService_GetStats_FullMethodName     = "/pkg.api.shortener.v1.ShortenerService/GetStats"
 )
 
 // ShortenerServiceClient is the client API for ShortenerService service.
@@ -37,6 +37,8 @@ type ShortenerServiceClient interface {
 	// SaveBatchURL saves a batch of URLs and returns their shortened versions.
 	SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error)
 	// GetStats retrieves statistics about saved URLs and users.
+	// @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE Решено использовать
+	// google.protobuf.Empty для этого RPC
 	GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
@@ -95,6 +97,8 @@ type ShortenerServiceServer interface {
 	// SaveBatchURL saves a batch of URLs and returns their shortened versions.
 	SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error)
 	// GetStats retrieves statistics about saved URLs and users.
+	// @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE Решено использовать
+	// google.protobuf.Empty для этого RPC
 	GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error)
 	mustEmbedUnimplementedShortenerServiceServer()
 }
@@ -204,7 +208,7 @@ func _ShortenerService_GetStats_Handler(srv interface{}, ctx context.Context, de
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ShortenerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.shortener.v1.ShortenerService",
+	ServiceName: "pkg.api.shortener.v1.ShortenerService",
 	HandlerType: (*ShortenerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
