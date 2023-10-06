@@ -255,7 +255,16 @@ func (h *APIHandler) SaveBatchURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	result, err := usecase.ProcessBatchURLs(r.Context(), body, h.repository, token, h.globalURL, h.myLogger)
+	batch := &models.BatchURL{}
+	err = json.Unmarshal(body, batch)
+	if err != nil {
+		h.myLogger.Debug("error unmarshall to body", zap.Error(err))
+		http.Error(w, "", http.StatusInternalServerError)
+
+		return
+	}
+
+	result, err := usecase.ProcessBatchURLs(r.Context(), batch, h.repository, token, h.globalURL, h.myLogger)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 

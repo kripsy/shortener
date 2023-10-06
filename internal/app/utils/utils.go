@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	//nolint:depguard
-
+	"github.com/kripsy/shortener/internal/app/models"
+	pb "github.com/kripsy/shortener/pkg/api/shortener/v1/gen"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )
@@ -218,4 +218,20 @@ func GetTokenFromMetadata(ctx context.Context) (string, error) {
 	token := strings.TrimPrefix(values[0], "Bearer ")
 
 	return token, nil
+}
+
+func Convert2BatchURLResponse(batchURL models.BatchURL) *pb.SaveBatchURLResponse {
+	responseObjects := make([]*pb.SaveBatchURLResponse_URLObject, 0)
+
+	for _, event := range batchURL {
+		responseObject := &pb.SaveBatchURLResponse_URLObject{
+			CorrelationId: event.CorrelationID,
+			ShortUrl:      event.ShortURL,
+		}
+		responseObjects = append(responseObjects, responseObject)
+	}
+
+	return &pb.SaveBatchURLResponse{
+		UrlBatch: responseObjects,
+	}
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"github.com/bufbuild/protovalidate-go"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -131,8 +130,6 @@ func (s *Server) GetURL(ctx context.Context, req *pb.GetURLRequest) (*pb.GetURLR
 
 func (s *Server) GetStats(ctx context.Context, _ *emptypb.Empty) (*pb.GetStatsResponse, error) {
 	s.MyLogger.Debug("start SaveURL")
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
 	stats, err := s.Repo.GetStatsFromStorage(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
@@ -166,30 +163,25 @@ func (s *Server) SaveBatchURL(ctx context.Context, req *pb.SaveBatchURLRequest) 
 		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "invalid request"))
 	}
 
-	result, err := usecase.ProcessBatchURLs(ctx, body, s.Repo, token, s.URLRepo, s.MyLogger)
+	batch := models.BatchURL{}
+	err = json.Unmarshal(body, &batch)
+	if err != nil {
+		return nil, fmt.Errorf("%w", status.Error(codes.InvalidArgument, "invalid request"))
+	}
+	// for _, v := range req.UrlBatch {
+	// 	batch = append(batch, models.Event{
+	// 		CorrelationID: v.CorrelationId,
+	// 		OriginalURL:   v.OriginalUrl,
+	// 	})
+	// }
+
+	result, err := usecase.ProcessBatchURLs(ctx, &batch, s.Repo, token, s.URLRepo, s.MyLogger)
 	if err != nil {
 		return nil, fmt.Errorf("%w", status.Error(codes.Internal, err.Error()))
 	}
-	//nolint:asciicheck
-	r := сonvertToSaveBatchURLResponse(result)
+	r := utils.Convert2BatchURLResponse(result)
 
 	s.MyLogger.Debug("start SaveURL")
 
 	return r, nil
-}
-
-func сonvertToSaveBatchURLResponse(batchURL models.BatchURL) *pb.SaveBatchURLResponse {
-	responseObjects := make([]*pb.SaveBatchURLResponse_URLObject, 0)
-
-	for _, event := range batchURL {
-		responseObject := &pb.SaveBatchURLResponse_URLObject{
-			CorrelationId: event.CorrelationID,
-			ShortUrl:      event.ShortURL,
-		}
-		responseObjects = append(responseObjects, responseObject)
-	}
-
-	return &pb.SaveBatchURLResponse{
-		UrlBatch: responseObjects,
-	}
 }

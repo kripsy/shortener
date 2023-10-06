@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -25,25 +24,19 @@ type Repository interface {
 }
 
 func ProcessBatchURLs(ctx context.Context,
-	body []byte,
+	batch *models.BatchURL,
 	repo Repository,
 	token, globalURL string,
 	l *zap.Logger) (models.BatchURL, error) {
 	userID, _ := auth.GetUserID(token)
 	l.Debug("start ProcessBatchURLs")
 
-	var payload *models.BatchURL
-	err := json.Unmarshal(body, &payload)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	if len(*payload) < 1 {
+	if len(*batch) < 1 {
 		//nolint:goerr113
 		return nil, errors.New("empty payload")
 	}
 
-	val, err := repo.CreateOrGetBatchFromStorage(ctx, payload, userID)
+	val, err := repo.CreateOrGetBatchFromStorage(ctx, batch, userID)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
