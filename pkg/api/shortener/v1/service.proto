@@ -19,8 +19,8 @@ service ShortenerService {
   rpc SaveBatchURL(SaveBatchURLRequest) returns (SaveBatchURLResponse);
 
   // GetStats retrieves statistics about saved URLs and users.
-  // @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE Решено использовать
-  // google.protobuf.Empty для этого RPC
+  // @buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE wanna use
+  // google.protobuf.Empty
   rpc GetStats(google.protobuf.Empty) returns (GetStatsResponse);
 }
 
