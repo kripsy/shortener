@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
+	pb "github.com/kripsy/shortener/gen/pkg/api/shortener/v1"
 	"github.com/kripsy/shortener/internal/app/models"
-	pb "github.com/kripsy/shortener/pkg/api/shortener/v1/gen"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )

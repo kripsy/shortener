@@ -5,7 +5,7 @@ package shortener.v1;
 import "google/protobuf/empty.proto";
 import "buf/validate/validate.proto";
 
-option go_package = "pkg/api/shortener/v1";
+option go_package = "github.com/kripsy/shortener/pkg/api/shortener";
 
 // ShortenerService provides URL shortening capabilities.
 service Shortener {

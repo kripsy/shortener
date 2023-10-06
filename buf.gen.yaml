@@ -8,9 +8,3 @@ plugins:
     out: ./gen
     opt:
       - paths=source_relative
-managed:
-  enabled: true
-  go_package_prefix:
-    default: github.com/kripsy/shortener
-    except:
-      - buf.build/bufbuild/protovalidate
