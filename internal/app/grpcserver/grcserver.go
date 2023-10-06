@@ -26,7 +26,7 @@ import (
 )
 
 type Server struct {
-	pb.UnimplementedShortenerServer
+	pb.UnimplementedShortenerServiceServer
 	MyLogger *zap.Logger
 	URLRepo  string
 	Repo     handlers.Repository
@@ -60,7 +60,7 @@ func InitServer(urlRepo string, repo handlers.Repository,
 		srv = grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
 	}
 
-	pb.RegisterShortenerServer(srv, s)
+	pb.RegisterShortenerServiceServer(srv, s)
 
 	return srv, nil
 }

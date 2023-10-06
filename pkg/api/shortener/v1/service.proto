@@ -8,7 +8,7 @@ import "buf/validate/validate.proto";
 option go_package = "github.com/kripsy/shortener/pkg/api/shortener";
 
 // ShortenerService provides URL shortening capabilities.
-service Shortener {
+service ShortenerService {
   // SaveURL saves a given URL and returns a shortened version.
   rpc SaveURL(SaveURLRequest) returns (SaveURLResponse);
 

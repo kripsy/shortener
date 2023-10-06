@@ -20,16 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Shortener_SaveURL_FullMethodName      = "/shortener.v1.Shortener/SaveURL"
-	Shortener_GetURL_FullMethodName       = "/shortener.v1.Shortener/GetURL"
-	Shortener_SaveBatchURL_FullMethodName = "/shortener.v1.Shortener/SaveBatchURL"
-	Shortener_GetStats_FullMethodName     = "/shortener.v1.Shortener/GetStats"
+	ShortenerService_SaveURL_FullMethodName      = "/shortener.v1.ShortenerService/SaveURL"
+	ShortenerService_GetURL_FullMethodName       = "/shortener.v1.ShortenerService/GetURL"
+	ShortenerService_SaveBatchURL_FullMethodName = "/shortener.v1.ShortenerService/SaveBatchURL"
+	ShortenerService_GetStats_FullMethodName     = "/shortener.v1.ShortenerService/GetStats"
 )
 
-// ShortenerClient is the client API for Shortener service.
+// ShortenerServiceClient is the client API for ShortenerService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ShortenerClient interface {
+type ShortenerServiceClient interface {
 	// SaveURL saves a given URL and returns a shortened version.
 	SaveURL(ctx context.Context, in *SaveURLRequest, opts ...grpc.CallOption) (*SaveURLResponse, error)
 	// GetURL retrieves the original URL for a given shortened version.
@@ -40,54 +40,54 @@ type ShortenerClient interface {
 	GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
-type shortenerClient struct {
+type shortenerServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewShortenerClient(cc grpc.ClientConnInterface) ShortenerClient {
-	return &shortenerClient{cc}
+func NewShortenerServiceClient(cc grpc.ClientConnInterface) ShortenerServiceClient {
+	return &shortenerServiceClient{cc}
 }
 
-func (c *shortenerClient) SaveURL(ctx context.Context, in *SaveURLRequest, opts ...grpc.CallOption) (*SaveURLResponse, error) {
+func (c *shortenerServiceClient) SaveURL(ctx context.Context, in *SaveURLRequest, opts ...grpc.CallOption) (*SaveURLResponse, error) {
 	out := new(SaveURLResponse)
-	err := c.cc.Invoke(ctx, Shortener_SaveURL_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ShortenerService_SaveURL_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *shortenerClient) GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error) {
+func (c *shortenerServiceClient) GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error) {
 	out := new(GetURLResponse)
-	err := c.cc.Invoke(ctx, Shortener_GetURL_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ShortenerService_GetURL_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *shortenerClient) SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error) {
+func (c *shortenerServiceClient) SaveBatchURL(ctx context.Context, in *SaveBatchURLRequest, opts ...grpc.CallOption) (*SaveBatchURLResponse, error) {
 	out := new(SaveBatchURLResponse)
-	err := c.cc.Invoke(ctx, Shortener_SaveBatchURL_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ShortenerService_SaveBatchURL_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *shortenerClient) GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error) {
+func (c *shortenerServiceClient) GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error) {
 	out := new(GetStatsResponse)
-	err := c.cc.Invoke(ctx, Shortener_GetStats_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, ShortenerService_GetStats_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ShortenerServer is the server API for Shortener service.
-// All implementations must embed UnimplementedShortenerServer
+// ShortenerServiceServer is the server API for ShortenerService service.
+// All implementations must embed UnimplementedShortenerServiceServer
 // for forward compatibility
-type ShortenerServer interface {
+type ShortenerServiceServer interface {
 	// SaveURL saves a given URL and returns a shortened version.
 	SaveURL(context.Context, *SaveURLRequest) (*SaveURLResponse, error)
 	// GetURL retrieves the original URL for a given shortened version.
@@ -96,132 +96,132 @@ type ShortenerServer interface {
 	SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error)
 	// GetStats retrieves statistics about saved URLs and users.
 	GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error)
-	mustEmbedUnimplementedShortenerServer()
+	mustEmbedUnimplementedShortenerServiceServer()
 }
 
-// UnimplementedShortenerServer must be embedded to have forward compatible implementations.
-type UnimplementedShortenerServer struct {
+// UnimplementedShortenerServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedShortenerServiceServer struct {
 }
 
-func (UnimplementedShortenerServer) SaveURL(context.Context, *SaveURLRequest) (*SaveURLResponse, error) {
+func (UnimplementedShortenerServiceServer) SaveURL(context.Context, *SaveURLRequest) (*SaveURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveURL not implemented")
 }
-func (UnimplementedShortenerServer) GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error) {
+func (UnimplementedShortenerServiceServer) GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetURL not implemented")
 }
-func (UnimplementedShortenerServer) SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error) {
+func (UnimplementedShortenerServiceServer) SaveBatchURL(context.Context, *SaveBatchURLRequest) (*SaveBatchURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveBatchURL not implemented")
 }
-func (UnimplementedShortenerServer) GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error) {
+func (UnimplementedShortenerServiceServer) GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
-func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
+func (UnimplementedShortenerServiceServer) mustEmbedUnimplementedShortenerServiceServer() {}
 
-// UnsafeShortenerServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ShortenerServer will
+// UnsafeShortenerServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ShortenerServiceServer will
 // result in compilation errors.
-type UnsafeShortenerServer interface {
-	mustEmbedUnimplementedShortenerServer()
+type UnsafeShortenerServiceServer interface {
+	mustEmbedUnimplementedShortenerServiceServer()
 }
 
-func RegisterShortenerServer(s grpc.ServiceRegistrar, srv ShortenerServer) {
-	s.RegisterService(&Shortener_ServiceDesc, srv)
+func RegisterShortenerServiceServer(s grpc.ServiceRegistrar, srv ShortenerServiceServer) {
+	s.RegisterService(&ShortenerService_ServiceDesc, srv)
 }
 
-func _Shortener_SaveURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ShortenerService_SaveURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SaveURLRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ShortenerServer).SaveURL(ctx, in)
+		return srv.(ShortenerServiceServer).SaveURL(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Shortener_SaveURL_FullMethodName,
+		FullMethod: ShortenerService_SaveURL_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).SaveURL(ctx, req.(*SaveURLRequest))
+		return srv.(ShortenerServiceServer).SaveURL(ctx, req.(*SaveURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Shortener_GetURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ShortenerService_GetURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetURLRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ShortenerServer).GetURL(ctx, in)
+		return srv.(ShortenerServiceServer).GetURL(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Shortener_GetURL_FullMethodName,
+		FullMethod: ShortenerService_GetURL_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).GetURL(ctx, req.(*GetURLRequest))
+		return srv.(ShortenerServiceServer).GetURL(ctx, req.(*GetURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Shortener_SaveBatchURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ShortenerService_SaveBatchURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SaveBatchURLRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ShortenerServer).SaveBatchURL(ctx, in)
+		return srv.(ShortenerServiceServer).SaveBatchURL(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Shortener_SaveBatchURL_FullMethodName,
+		FullMethod: ShortenerService_SaveBatchURL_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).SaveBatchURL(ctx, req.(*SaveBatchURLRequest))
+		return srv.(ShortenerServiceServer).SaveBatchURL(ctx, req.(*SaveBatchURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Shortener_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ShortenerService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ShortenerServer).GetStats(ctx, in)
+		return srv.(ShortenerServiceServer).GetStats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Shortener_GetStats_FullMethodName,
+		FullMethod: ShortenerService_GetStats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).GetStats(ctx, req.(*emptypb.Empty))
+		return srv.(ShortenerServiceServer).GetStats(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
+// ShortenerService_ServiceDesc is the grpc.ServiceDesc for ShortenerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Shortener_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "shortener.v1.Shortener",
-	HandlerType: (*ShortenerServer)(nil),
+var ShortenerService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "shortener.v1.ShortenerService",
+	HandlerType: (*ShortenerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SaveURL",
-			Handler:    _Shortener_SaveURL_Handler,
+			Handler:    _ShortenerService_SaveURL_Handler,
 		},
 		{
 			MethodName: "GetURL",
-			Handler:    _Shortener_GetURL_Handler,
+			Handler:    _ShortenerService_GetURL_Handler,
 		},
 		{
 			MethodName: "SaveBatchURL",
-			Handler:    _Shortener_SaveBatchURL_Handler,
+			Handler:    _ShortenerService_SaveBatchURL_Handler,
 		},
 		{
 			MethodName: "GetStats",
-			Handler:    _Shortener_GetStats_Handler,
+			Handler:    _ShortenerService_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
